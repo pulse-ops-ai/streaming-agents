@@ -1,0 +1,4 @@
+# gitleaks ignore file
+# The .secrets.baseline contains hashed (non-reversible) representations
+# of detected secrets — these are safe to commit and are not real secrets.
+.secrets.baseline

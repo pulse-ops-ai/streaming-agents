@@ -1,0 +1,4 @@
+# LocalStack terraform variables
+# Copy to terraform.tfvars and customise
+# environment = "localstack"
+# region      = "us-east-1"

@@ -1,0 +1,1 @@
+# AWS Sandbox environment outputs

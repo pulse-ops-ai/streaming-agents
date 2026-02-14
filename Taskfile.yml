@@ -1,0 +1,55 @@
+version: "3"
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  install:
+    desc: Install all dependencies
+    cmds:
+      - pnpm install
+
+  dev:
+    desc: Start local development
+    cmds:
+      - pnpm run dev
+
+  build:
+    desc: Build all packages and services
+    cmds:
+      - pnpm run build
+
+  test:
+    desc: Run all tests
+    cmds:
+      - pnpm run test
+
+  lint:
+    desc: Lint everything
+    cmds:
+      - pnpm run lint
+
+  infra:up:
+    desc: Spin up LocalStack infrastructure
+    dir: infra/envs/localstack
+    cmds:
+      - terraform init
+      - terraform apply -auto-approve
+
+  infra:down:
+    desc: Tear down LocalStack infrastructure
+    dir: infra/envs/localstack
+    cmds:
+      - terraform destroy -auto-approve
+
+  seed:
+    desc: Seed local data
+    cmds:
+      - bash scripts/seed/seed.sh
+
+  teardown:
+    desc: Full teardown of local environment
+    cmds:
+      - bash scripts/teardown/teardown.sh
