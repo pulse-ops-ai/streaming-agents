@@ -50,3 +50,7 @@ htmlcov/
 # LocalStack
 .localstack/
 volume/
+awscliv2.zip
+THIRD_PARTY_LICENSES
+aws/install
+aws/README.md

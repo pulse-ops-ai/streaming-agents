@@ -1,3 +1,3 @@
-# Builder Center Article
+# AIdeas: Streaming Agents
 
-Draft article for publication.
+(Draft article content lives here.)
