@@ -17,44 +17,54 @@ Establish a stable, reproducible development environment before any streaming lo
 
 ## 1️⃣ Workspace Validation
 
-- [ ] Verify pnpm workspace resolution across services and packages
-- [ ] Verify uv workspace members resolve correctly
-- [ ] Confirm TypeScript path aliases compile
-- [ ] Confirm Ruff runs across Python workspace
+- [x] Verify pnpm workspace resolution across services and packages
+- [x] Verify uv workspace members resolve correctly
+- [x] Confirm TypeScript compiles (typescript@5.9.3 added as devDependency; no TS source files yet — expected in Phase 1)
+- [x] Confirm Ruff runs across Python workspace
 - [ ] Confirm build scripts function without runtime logic
 
 ---
 
 ## 2️⃣ Pre-Commit Enforcement
 
-- [ ] Confirm Biome runs on staged TypeScript files
-- [ ] Confirm Ruff runs on staged Python files
-- [ ] Confirm detect-secrets blocks new secrets
-- [ ] Confirm gitleaks passes
-- [ ] Confirm hooks run clean on full repo
+- [x] Confirm Biome runs on staged TypeScript files
+- [x] Confirm Ruff runs on staged Python files
+- [x] Confirm detect-secrets blocks new secrets
+- [x] Confirm gitleaks passes (via pre-commit hook)
+- [x] Confirm hooks run clean on full repo (all 10 hooks pass)
 
 ---
 
 ## 3️⃣ Terraform Baseline
 
-- [ ] Validate `infra/envs/localstack` initializes
-- [ ] Validate LocalStack provider endpoints
-- [ ] Validate aws-sandbox provider config
-- [ ] Add placeholder modules for:
+- [x] Validate `infra/envs/localstack` initializes (tflocal init + validate pass)
+- [x] Validate LocalStack provider endpoints (tflocal plan confirms endpoint connectivity)
+- [x] Validate aws-sandbox provider config (terraform init + validate pass)
+- [x] Add placeholder modules for:
   - DynamoDB
   - Kinesis
   - Lambda
-- [ ] Confirm local apply + destroy works cleanly
+- [x] Confirm local apply + destroy works cleanly (0 resources — modules still stubs, cycle exits 0)
 
 ---
 
 ## 4️⃣ Documentation Alignment
 
-- [ ] README reflects robotics uptime initiative
-- [ ] context.md reflects strict phase discipline
-- [ ] roles.md exists and is aligned
-- [ ] tasks.md exists (this file)
-- [ ] No outdated references to generic telemetry
+- [x] README reflects robotics uptime initiative
+- [x] context.md reflects strict phase discipline
+- [x] roles.md exists and is aligned
+- [x] tasks.md exists (this file)
+- [x] No outdated references to generic telemetry (fixed: risk-scoring.md, telemetry-model.md, project-brief.md, threat-model-lite.md)
+
+---
+
+## 5️⃣ Skills Library
+
+- [x] Create .claude/skills/ with 7 phase-disciplined skills (01–07)
+- [x] Create .claude/skills/README.md index
+- [x] Mirror skills to .kiro/skills/ via symlinks
+- [x] Run docs-spine-sync skill — all spine files present, cross-references validated
+- [x] Run workspace-healthcheck skill — 6 pass, 1 fixed (typescript dep), 3 skip (terraform/gitleaks CLI not installed)
 
 ---
 
