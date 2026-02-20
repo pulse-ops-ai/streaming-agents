@@ -21,7 +21,7 @@ Establish a stable, reproducible development environment before any streaming lo
 - [x] Verify uv workspace members resolve correctly
 - [x] Confirm TypeScript compiles (typescript@5.9.3 added as devDependency; no TS source files yet — expected in Phase 1)
 - [x] Confirm Ruff runs across Python workspace
-- [ ] Confirm build scripts function without runtime logic
+- [x] Confirm build scripts function without runtime logic (build, test, clean, lint, format all exit 0)
 
 ---
 
