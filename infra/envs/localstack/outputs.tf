@@ -78,6 +78,48 @@ output "eventbridge_simulator_cron_name" {
   value       = aws_cloudwatch_event_rule.simulator_cron.name
 }
 
+# ── Lambda Functions ──────────────────────────────────────────────
+
+output "lambda_simulator_controller_arn" {
+  description = "ARN of the simulator-controller Lambda function"
+  value       = aws_lambda_function.simulator_controller.arn
+}
+
+output "lambda_simulator_controller_name" {
+  description = "Name of the simulator-controller Lambda function"
+  value       = aws_lambda_function.simulator_controller.function_name
+}
+
+output "lambda_simulator_worker_arn" {
+  description = "ARN of the simulator-worker Lambda function"
+  value       = aws_lambda_function.simulator_worker.arn
+}
+
+output "lambda_simulator_worker_name" {
+  description = "Name of the simulator-worker Lambda function"
+  value       = aws_lambda_function.simulator_worker.function_name
+}
+
+output "lambda_ingestion_arn" {
+  description = "ARN of the ingestion Lambda function"
+  value       = aws_lambda_function.ingestion_service.arn
+}
+
+output "lambda_ingestion_name" {
+  description = "Name of the ingestion Lambda function"
+  value       = aws_lambda_function.ingestion_service.function_name
+}
+
+output "lambda_signal_agent_arn" {
+  description = "ARN of the signal-agent Lambda function"
+  value       = aws_lambda_function.signal_agent.arn
+}
+
+output "lambda_signal_agent_name" {
+  description = "Name of the signal-agent Lambda function"
+  value       = aws_lambda_function.signal_agent.function_name
+}
+
 # ── IAM Roles ─────────────────────────────────────────────────────
 
 output "iam_simulator_controller_role_arn" {
@@ -98,4 +140,16 @@ output "iam_ingestion_service_role_arn" {
 output "iam_signal_agent_role_arn" {
   description = "ARN of the signal-agent Lambda execution role"
   value       = aws_iam_role.signal_agent.arn
+}
+
+# ── Event Source Mappings ─────────────────────────────────────────
+
+output "esm_ingestion_uuid" {
+  description = "UUID of the ingestion Kinesis event source mapping"
+  value       = aws_lambda_event_source_mapping.ingestion_kinesis.uuid
+}
+
+output "esm_signal_agent_uuid" {
+  description = "UUID of the signal-agent Kinesis event source mapping"
+  value       = aws_lambda_event_source_mapping.signal_agent_kinesis.uuid
 }

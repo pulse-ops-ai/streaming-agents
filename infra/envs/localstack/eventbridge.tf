@@ -15,8 +15,4 @@ resource "aws_cloudwatch_event_rule" "simulator_cron" {
   }
 }
 
-# Note: Event target will be added in Phase 2.5 when Lambda functions are created
-# resource "aws_cloudwatch_event_target" "simulator_controller" {
-#   rule = aws_cloudwatch_event_rule.simulator_cron.name
-#   arn  = aws_lambda_function.simulator_controller.arn
-# }
+# Note: Event target is defined in lambda.tf alongside the Lambda function

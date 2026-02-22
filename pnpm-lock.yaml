@@ -15,6 +15,71 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  apps/lambdas/simulator-controller:
+    dependencies:
+      '@aws-sdk/client-lambda':
+        specifier: ^3.700.0
+        version: 3.995.0
+      '@streaming-agents/core-config':
+        specifier: workspace:*
+        version: link:../../../packages/core-config
+      '@streaming-agents/core-contracts':
+        specifier: workspace:*
+        version: link:../../../packages/core-contracts
+      '@streaming-agents/core-telemetry':
+        specifier: workspace:*
+        version: link:../../../packages/core-telemetry
+      '@streaming-agents/lambda-base':
+        specifier: workspace:*
+        version: link:../../../packages/lambda-base
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.11
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/node@22.19.11)(tsx@4.21.0)
+
+  apps/lambdas/simulator-worker:
+    dependencies:
+      '@streaming-agents/core-config':
+        specifier: workspace:*
+        version: link:../../../packages/core-config
+      '@streaming-agents/core-contracts':
+        specifier: workspace:*
+        version: link:../../../packages/core-contracts
+      '@streaming-agents/core-kinesis':
+        specifier: workspace:*
+        version: link:../../../packages/core-kinesis
+      '@streaming-agents/core-telemetry':
+        specifier: workspace:*
+        version: link:../../../packages/core-telemetry
+      '@streaming-agents/lambda-base':
+        specifier: workspace:*
+        version: link:../../../packages/lambda-base
+      '@streaming-agents/schemas':
+        specifier: workspace:*
+        version: link:../../../packages/schemas
+      seedrandom:
+        specifier: ^3.0.5
+        version: 3.0.5
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.11
+      '@types/seedrandom':
+        specifier: ^3.0.8
+        version: 3.0.8
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/node@22.19.11)(tsx@4.21.0)
+
   packages/core-config:
     dependencies:
       zod:
@@ -178,6 +243,10 @@ packages:
 
   '@aws-sdk/client-kinesis@3.995.0':
     resolution: {integrity: sha512-Ihgu9BxzrBVZY4KVreXehUOi7TZhRuyjWpmDkiF4MiM7OO3ee3Em3MEvB5XrD86J46DHB1ru5IXsMtgmt2uC0A==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/client-lambda@3.995.0':
+    resolution: {integrity: sha512-udxiVZs+l84PKrlmYelLNwxLLEJWK1bQLdt6zZdwOdzuv+39KkRaGkAH8fFhrH1S7QM19usV0l6GOE+Zzx40aQ==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/client-secrets-manager@3.995.0':
@@ -1105,6 +1174,9 @@ packages:
   '@types/node@22.19.11':
     resolution: {integrity: sha512-BH7YwL6rA93ReqeQS1c4bsPpcfOmJasG+Fkr6Y59q83f9M1WcBRHR2vM+P9eOisYRcN3ujQoiZY8uk5W+1WL8w==}
 
+  '@types/seedrandom@3.0.8':
+    resolution: {integrity: sha512-TY1eezMU2zH2ozQoAFAQFOPpvP15g+ZgSfTZt31AUUH/Rxtnz3H+A/Sv1Snw2/amp//omibc+AEkTaA8KUeOLQ==}
+
   '@types/shimmer@1.2.0':
     resolution: {integrity: sha512-UE7oxhQLLd9gub6JKIAhDq06T0F6FnztwMNRvYgjeQSBeMc1ZG/tA47EwfduvkuQS8apbkM/lpLpWsaCeYsXVg==}
 
@@ -1416,6 +1488,9 @@ packages:
     resolution: {integrity: sha512-b3rppTKm9T+PsVCBEOUR46GWI7fdOs00VKZ1+9c1EWDaDMvjQc6tUwuFyIprgGgTcWoVHSKrU8H31ZHA2e0RHA==}
     engines: {node: '>=10'}
 
+  seedrandom@3.0.5:
+    resolution: {integrity: sha512-8OwmbklUNzwezjGInmZ+2clQmExQPvomqjL7LFqOYqtmuxRgQYqOD3mHaU+MvZn5FLUeVxVfQjwLZW/n/JFuqg==}
+
   semver@7.7.4:
     resolution: {integrity: sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA==}
     engines: {node: '>=10'}
@@ -1710,6 +1785,55 @@ snapshots:
       '@smithy/util-endpoints': 3.2.8
       '@smithy/util-middleware': 4.2.8
       '@smithy/util-retry': 4.2.8
+      '@smithy/util-utf8': 4.2.0
+      '@smithy/util-waiter': 4.2.8
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - aws-crt
+
+  '@aws-sdk/client-lambda@3.995.0':
+    dependencies:
+      '@aws-crypto/sha256-browser': 5.2.0
+      '@aws-crypto/sha256-js': 5.2.0
+      '@aws-sdk/core': 3.973.11
+      '@aws-sdk/credential-provider-node': 3.972.10
+      '@aws-sdk/middleware-host-header': 3.972.3
+      '@aws-sdk/middleware-logger': 3.972.3
+      '@aws-sdk/middleware-recursion-detection': 3.972.3
+      '@aws-sdk/middleware-user-agent': 3.972.11
+      '@aws-sdk/region-config-resolver': 3.972.3
+      '@aws-sdk/types': 3.973.1
+      '@aws-sdk/util-endpoints': 3.995.0
+      '@aws-sdk/util-user-agent-browser': 3.972.3
+      '@aws-sdk/util-user-agent-node': 3.972.10
+      '@smithy/config-resolver': 4.4.6
+      '@smithy/core': 3.23.2
+      '@smithy/eventstream-serde-browser': 4.2.8
+      '@smithy/eventstream-serde-config-resolver': 4.3.8
+      '@smithy/eventstream-serde-node': 4.2.8
+      '@smithy/fetch-http-handler': 5.3.9
+      '@smithy/hash-node': 4.2.8
+      '@smithy/invalid-dependency': 4.2.8
+      '@smithy/middleware-content-length': 4.2.8
+      '@smithy/middleware-endpoint': 4.4.16
+      '@smithy/middleware-retry': 4.4.33
+      '@smithy/middleware-serde': 4.2.9
+      '@smithy/middleware-stack': 4.2.8
+      '@smithy/node-config-provider': 4.3.8
+      '@smithy/node-http-handler': 4.4.10
+      '@smithy/protocol-http': 5.3.8
+      '@smithy/smithy-client': 4.11.5
+      '@smithy/types': 4.12.0
+      '@smithy/url-parser': 4.2.8
+      '@smithy/util-base64': 4.3.0
+      '@smithy/util-body-length-browser': 4.2.0
+      '@smithy/util-body-length-node': 4.2.1
+      '@smithy/util-defaults-mode-browser': 4.3.32
+      '@smithy/util-defaults-mode-node': 4.2.35
+      '@smithy/util-endpoints': 3.2.8
+      '@smithy/util-middleware': 4.2.8
+      '@smithy/util-retry': 4.2.8
+      '@smithy/util-stream': 4.5.12
       '@smithy/util-utf8': 4.2.0
       '@smithy/util-waiter': 4.2.8
       tslib: 2.8.1
@@ -2959,6 +3083,8 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  '@types/seedrandom@3.0.8': {}
+
   '@types/shimmer@1.2.0': {}
 
   '@vitest/expect@3.2.4':
@@ -3295,6 +3421,8 @@ snapshots:
       tslib: 2.8.1
 
   safe-stable-stringify@2.5.0: {}
+
+  seedrandom@3.0.5: {}
 
   semver@7.7.4: {}
 

@@ -1,0 +1,25 @@
+{
+  "name": "@streaming-agents/simulator-controller",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Simulator Controller Lambda — orchestrates fleet telemetry generation",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-lambda": "^3.700.0",
+    "@streaming-agents/core-config": "workspace:*",
+    "@streaming-agents/core-contracts": "workspace:*",
+    "@streaming-agents/core-telemetry": "workspace:*",
+    "@streaming-agents/lambda-base": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0"
+  }
+}

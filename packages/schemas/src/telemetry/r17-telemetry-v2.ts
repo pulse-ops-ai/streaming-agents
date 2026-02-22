@@ -45,8 +45,8 @@ export const R17TelemetryEventV2Schema = z
     /** Unique event identifier (ULID). */
     event_id: z.string().min(1),
 
-    /** Asset identifier. Locked to "r-17" for MVP. */
-    asset_id: z.literal('r-17'),
+    /** Asset identifier (e.g., "R-17", "R-1"). */
+    asset_id: z.string().min(1),
 
     /** ISO 8601 UTC timestamp of the measurement. */
     timestamp: z.string().datetime({ offset: true }),

@@ -27,4 +27,5 @@ export type ScenarioName =
   | 'joint_3_degradation'
   | 'thermal_runaway'
   | 'vibration_anomaly'
+  | 'random_walk'
   | 'mixed'

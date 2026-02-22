@@ -1,0 +1,28 @@
+{
+  "name": "@streaming-agents/simulator-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Simulator Worker Lambda — generates synthetic fleet telemetry",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@streaming-agents/core-config": "workspace:*",
+    "@streaming-agents/core-contracts": "workspace:*",
+    "@streaming-agents/core-kinesis": "workspace:*",
+    "@streaming-agents/core-telemetry": "workspace:*",
+    "@streaming-agents/lambda-base": "workspace:*",
+    "@streaming-agents/schemas": "workspace:*",
+    "seedrandom": "^3.0.5"
+  },
+  "devDependencies": {
+    "@types/seedrandom": "^3.0.8",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0"
+  }
+}

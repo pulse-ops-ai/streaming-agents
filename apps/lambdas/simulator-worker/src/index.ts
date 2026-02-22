@@ -1,0 +1,5 @@
+export { SimulatorWorkerHandler, type WorkerConfig } from './worker.handler.js'
+export { buildEvent, resetSequence } from './event-builder.js'
+export { createPRNG, gaussianNoise } from './prng.js'
+export { getScenario } from './scenarios/index.js'
+export type { NoiseFn, Scenario, SignalValues } from './scenarios/types.js'
