@@ -1,230 +1,302 @@
-# Streaming Agents — Phase Task Breakdown
+# Streaming Agents – Phase 2 Task Execution Plan
 
-This document defines atomic, phase-locked tasks for AI-assisted execution.
-
-All tasks must respect `docs/ai/context.md` phase discipline.
-
-No cross-phase leakage is allowed.
+This file is the task queue for Claude Code. Execute tasks in order.
+Mark tasks complete with ✅ as you finish them.
+Read the referenced docs BEFORE starting each task.
 
 ---
 
-# Phase 1 — Repository & Tooling Foundation (COMPLETE)
-
-## Objective
-Establish a stable, reproducible development environment before any streaming logic is implemented.
-
----
-
-## 1️⃣ Workspace Validation
-
-- [x] Verify pnpm workspace resolution across services and packages
-- [x] Verify uv workspace members resolve correctly
-- [x] Confirm TypeScript compiles (typescript@5.9.3 added as devDependency; no TS source files yet — expected in Phase 1)
-- [x] Confirm Ruff runs across Python workspace
-- [x] Confirm build scripts function without runtime logic (build, test, clean, lint, format all exit 0)
+## Pre-Flight Checklist
+Before starting any task, verify:
+- [ ] `pnpm build` passes
+- [ ] `pnpm generate:jsonschema` runs
+- [ ] `ruff check python/` passes
+- [ ] Pre-commit hooks pass
 
 ---
 
-## 2️⃣ Pre-Commit Enforcement
-
-- [x] Confirm Biome runs on staged TypeScript files
-- [x] Confirm Ruff runs on staged Python files
-- [x] Confirm detect-secrets blocks new secrets
-- [x] Confirm gitleaks passes (via pre-commit hook)
-- [x] Confirm hooks run clean on full repo (all 10 hooks pass)
-
----
-
-## 3️⃣ Terraform Baseline
-
-- [x] Validate `infra/envs/localstack` initializes (tflocal init + validate pass)
-- [x] Validate LocalStack provider endpoints (tflocal plan confirms endpoint connectivity)
-- [x] Validate aws-sandbox provider config (terraform init + validate pass)
-- [x] Add placeholder modules for:
-  - DynamoDB
-  - Kinesis
-  - Lambda
-- [x] Confirm local apply + destroy works cleanly (0 resources — modules still stubs, cycle exits 0)
+## Task 2.2 – Architecture Docs & Kiro Agents ✅
+**Status:** Complete (created by human + Claude in conversation)
+**Output:**
+- `docs/ai/context.md` — rehydration anchor
+- `docs/ai/services/*.md` — 4 service contracts
+- `docs/ai/architecture/*.md` — 4 architecture docs
+- `.kiro/agents/*.md` — 4 Kiro review agents
 
 ---
 
-## 4️⃣ Documentation Alignment
+## Task 2.3 – Shared Packages
+**Read first:** `docs/ai/architecture/lambda-patterns.md` (Package Map section)
+**Depends on:** Task 2.2
 
-- [x] README reflects robotics uptime initiative
-- [x] context.md reflects strict phase discipline
-- [x] roles.md exists and is aligned
-- [x] tasks.md exists (this file)
-- [x] No outdated references to generic telemetry (fixed: risk-scoring.md, telemetry-model.md, project-brief.md, threat-model-lite.md)
+### 2.3a – `packages/core-contracts/`
+Create TypeScript types for all event payloads.
+**Read:** `docs/ai/architecture/event-schema-contract.md`
 
----
+Files to create:
+```
+packages/core-contracts/
+├── src/
+│   ├── index.ts                  # Re-exports all types
+│   ├── ingested-event.ts         # IngestedEvent type
+│   ├── risk-event.ts             # RiskEvent type
+│   ├── dlq-message.ts            # DLQMessage type
+│   ├── simulator-payload.ts      # SimulatorWorkerPayload type
+│   ├── asset-state.ts            # AssetState DynamoDB type
+│   └── envelope.ts               # Shared envelope fields
+├── package.json                  # @streaming-agents/core-contracts
+└── tsconfig.json
+```
 
-## 5️⃣ Skills Library
+Acceptance:
+- `pnpm build` succeeds for this package
+- All types match the schemas in `docs/ai/architecture/event-schema-contract.md`
+- Package exports are importable: `import { IngestedEvent } from '@streaming-agents/core-contracts'`
 
-- [x] Create .claude/skills/ with 7 phase-disciplined skills (01–07)
-- [x] Create .claude/skills/README.md index
-- [x] Mirror skills to .kiro/skills/ via symlinks
-- [x] Run docs-spine-sync skill — all spine files present, cross-references validated
-- [x] Run workspace-healthcheck skill — 6 pass, 1 fixed (typescript dep), 3 skip (terraform/gitleaks CLI not installed)
+### 2.3b – `packages/core-config/`
+Zod-validated environment variable loading.
 
----
+Files to create:
+```
+packages/core-config/
+├── src/
+│   ├── index.ts
+│   ├── loader.ts                 # loadConfig<T>(schema: ZodSchema<T>): T
+│   ├── schemas/
+│   │   ├── lambda.ts             # Base Lambda config schema
+│   │   ├── kinesis-consumer.ts   # Kinesis input stream config
+│   │   ├── kinesis-producer.ts   # Kinesis output stream config
+│   │   └── dynamodb.ts           # DynamoDB table config
+│   └── types.ts
+├── package.json                  # @streaming-agents/core-config
+└── tsconfig.json
+```
 
-Phase 1 complete. All workspaces, tooling, hooks, and infrastructure configs validated.
+Acceptance:
+- Missing required env vars throw with clear error message
+- Zod parse errors include field name and expected type
+- Config objects are readonly (frozen)
 
----
+### 2.3c – `packages/core-telemetry/`
+OTel SDK wrapper.
+**Read:** `docs/ai/architecture/otel-instrumentation.md`
 
-# Phase 2 — Streaming Telemetry Pipeline (CURRENT)
+Files to create:
+```
+packages/core-telemetry/
+├── src/
+│   ├── index.ts
+│   ├── otel.ts                   # initOtel() SDK setup
+│   ├── telemetry.service.ts      # TelemetryService (spans, metrics)
+│   ├── logger.service.ts         # LoggerService (structured JSON, pino)
+│   └── constants.ts              # LOGGER token, metric names
+├── package.json                  # @streaming-agents/core-telemetry
+└── tsconfig.json
+```
 
-## Objective
-Implement deterministic streaming telemetry and composite risk calculation.
+Dependencies: `@opentelemetry/sdk-node`, `@opentelemetry/exporter-trace-otlp-http`,
+`@opentelemetry/exporter-metrics-otlp-http`, `pino`
 
----
+Acceptance:
+- `initOtel('service-name')` creates SDK with OTLP exporters
+- `TelemetryService` supports: startSpan, increment, timing, gauge
+- `LoggerService` outputs structured JSON with trace correlation
+- Works in Lambda environment (batch processor, flush on response)
 
-## 1️⃣ Telemetry v2 Schema & Reachy Exporter
+### 2.3d – `packages/core-kinesis/`
+Kinesis producer/consumer wrappers.
+**Read:** `docs/ai/architecture/kinesis-topology.md`
 
-- [x] Define `r17.telemetry.v2` Zod schema (`packages/schemas/src/telemetry/r17-telemetry-v2.ts`)
-- [x] Add v2 exports to `packages/schemas/src/telemetry/index.ts`
-- [x] Update JSON Schema generator and regenerate (`r17-telemetry-v2.schema.json`)
-- [x] Add v2 Pydantic models (`TelemetrySourceV2`, `ControlMode`, `ControlLoopStats`, `R17TelemetryV2Event`)
-- [x] Export v2 models from `streaming_agents_core`
-- [x] Scaffold `reachy-exporter` service (`python/services/reachy-exporter/`)
-  - [x] `config.py` — env var config + `J3_INDEX` constant
-  - [x] `client.py` — async httpx client for daemon REST API
-  - [x] `imu.py` — optional IMU reader with graceful fallback
-  - [x] `publisher.py` — Kinesis publisher with dry-run mode
-  - [x] `main.py` — CLI entry point (`--dry-run`, `--once`, `--log-level`)
-- [x] Add `reachy_exporter` to Ruff known-first-party
-- [x] Update `docs/02-domain/telemetry-model.md` with v2 schema table + example payloads
-- [x] Create `docs/rmi/README.md`
-- [x] Verify: `pnpm build`, `generate:jsonschema`, `biome check`, `uv sync`, `ruff check`, Python import OK
+Files to create:
+```
+packages/core-kinesis/
+├── src/
+│   ├── index.ts
+│   ├── producer.ts               # KinesisProducer (PutRecords batching)
+│   ├── consumer.ts               # KinesisConsumer (Lambda ESM record parsing)
+│   ├── dlq.ts                    # DLQPublisher (SQS)
+│   └── types.ts
+├── package.json                  # @streaming-agents/core-kinesis
+└── tsconfig.json
+```
 
----
+Dependencies: `@aws-sdk/client-kinesis`, `@aws-sdk/client-sqs`
 
-## 2️⃣ Telemetry Simulator
+Acceptance:
+- Producer batches PutRecords calls (configurable batch size, default 25)
+- Consumer deserializes Kinesis event records (base64 decode + JSON parse)
+- DLQ publisher formats messages per `DLQMessage` type
+- All operations instrumented with OTel spans
 
-- [ ] Implement R-17 telemetry generator
-- [ ] Implement deterministic degradation toggle
-- [ ] Emit events matching locked telemetry schema
-- [ ] Ensure reproducible degradation pattern
+### 2.3e – `packages/lambda-base/`
+BaseLambdaHandler and NestJS bootstrap.
+**Read:** `docs/ai/architecture/lambda-patterns.md`
 
----
+Files to create:
+```
+packages/lambda-base/
+├── src/
+│   ├── index.ts
+│   ├── handler.ts                # BaseLambdaHandler<TIn, TOut>
+│   ├── bootstrap.ts              # bootstrapLambda() for NestJS context
+│   ├── context.ts                # HandlerContext type
+│   └── types.ts                  # ProcessResult type
+├── package.json                  # @streaming-agents/lambda-base
+└── tsconfig.json
+```
 
-## 3️⃣ Kinesis Stream
+Dependencies: `@streaming-agents/core-config`, `@streaming-agents/core-telemetry`,
+`@nestjs/common`, `@nestjs/core`
 
-- [ ] Provision stream via Terraform module
-- [ ] Confirm stream reachable in LocalStack
-- [ ] Confirm stream reachable in AWS sandbox
-
----
-
-## 4️⃣ Signal Agent
-
-- [ ] Implement rolling baseline logic
-- [ ] Implement z-score calculation
-- [ ] Implement composite risk formula:
-  - 0.4 torque anomaly
-  - 0.3 temperature drift
-  - 0.2 position error deviation
-  - 0.1 threshold breach
-- [ ] Persist asset state to DynamoDB
-- [ ] Emit structured risk update events
-
----
-
-🚫 No incident logic yet.
-🚫 No LLM integration yet.
-
----
-
-# Phase 3 — Incident & Explainability Layer
-
-## Objective
-Create explainable incident lifecycle.
-
----
-
-## 1️⃣ Diagnosis Agent
-
-- [ ] Identify contributing signals
-- [ ] Generate deterministic reasoning capsule
-- [ ] Include:
-  - baseline values
-  - current values
-  - deviation magnitude
-  - composite risk
-  - confidence score
-  - recommended action
-
----
-
-## 2️⃣ Actions Agent
-
-- [ ] Create incident table in DynamoDB
-- [ ] Implement dedupe logic
-- [ ] Implement cooldown logic
-- [ ] Implement severity escalation
-- [ ] Ensure reasoning capsule stored with incident
-
----
-
-🚫 LLM still not involved.
-
----
-
-# Phase 4 — Conversational Copilot
-
-## Objective
-Expose structured conversational interface.
-
----
-
-## 1️⃣ Conversation Agent
-
-- [ ] Define structured response schema:
-  - summary
-  - details
-  - evidence
-  - recommended_actions
-  - confidence
-- [ ] Implement stub provider (local mode)
-- [ ] Integrate Bedrock provider (sandbox mode)
-- [ ] Ensure LLM cannot invent contributing signals
-- [ ] Enforce structured response contract
+Acceptance:
+- `BaseLambdaHandler.process()` returns `ProcessResult<TOut>`
+- `bootstrapLambda()` creates NestJS context once, reuses on warm invocations
+- OTel span wraps every `handle()` call
+- DLQ routing works via `onDLQ()` override
 
 ---
 
-## 2️⃣ Voice Interface (Optional in Phase 4)
+## Task 2.4 – Infrastructure (Terraform)
+**Read first:** `docs/ai/architecture/kinesis-topology.md`
+**Depends on:** Task 2.3
 
-- [ ] Implement web voice integration
-OR
-- [ ] Integrate Lex/Polly in sandbox
+Create Terraform resources for LocalStack and AWS sandbox:
 
----
+```
+infra/terraform/
+├── main.tf                       # Provider config, backend
+├── variables.tf                  # Environment-specific vars
+├── kinesis.tf                    # 3 streams
+├── sqs.tf                        # 2 DLQ queues
+├── dynamodb.tf                   # asset-state table
+├── eventbridge.tf                # simulator cron rule
+├── lambda.tf                     # 4 Lambda functions + IAM roles
+├── outputs.tf                    # Stream ARNs, queue URLs, table name
+└── terraform.tfvars.example
+```
 
-# Phase 5 — Demo & Polish
-
-## Objective
-Deliver deterministic, compelling demo.
-
----
-
-- [ ] Add degradation injection toggle
-- [ ] Add risk gauge visualization
-- [ ] Add incident timeline UI
-- [ ] Add robot silhouette highlighting Joint 3
-- [ ] Validate demo works in under 3 minutes
-- [ ] Align Builder Center article with README
-- [ ] Capture screenshots + video
-
----
-
-# Execution Rules
-
-- Tasks must be completed sequentially by phase.
-- No skipping ahead.
-- No cross-phase feature leakage.
-- All logic must align with deterministic risk philosophy.
-- If a feature is not required for demo clarity, defer it.
+Acceptance:
+- `terraform plan` succeeds against LocalStack
+- `terraform apply` creates all resources in LocalStack
+- All resource names prefixed with `streaming-agents-`
+- IAM roles follow least-privilege
 
 ---
 
-This file acts as the structured execution plan for Kiro task generation.
+## Task 2.5 – Simulator (Controller + Worker)
+**Read first:** `docs/ai/services/simulator-controller.md`, `docs/ai/services/simulator-worker.md`
+**Depends on:** Task 2.3, Task 2.4
+
+### 2.5a – Simulator Controller Lambda
+```
+apps/lambdas/simulator-controller/
+├── src/
+│   ├── main.ts
+│   ├── handler.ts                # Reads schedule, invokes N workers
+│   ├── handler.module.ts
+│   ├── handler.types.ts
+│   └── schedule.ts               # Load schedule config
+├── package.json
+├── tsconfig.json
+└── .env.example
+```
+
+### 2.5b – Simulator Worker Lambda
+```
+apps/lambdas/simulator-worker/
+├── src/
+│   ├── main.ts
+│   ├── handler.ts                # Generates events, writes to Kinesis
+│   ├── handler.module.ts
+│   ├── handler.types.ts
+│   ├── scenarios/
+│   │   ├── index.ts              # Scenario registry
+│   │   ├── healthy.ts
+│   │   ├── joint-degradation.ts
+│   │   ├── thermal-runaway.ts
+│   │   ├── vibration-anomaly.ts
+│   │   └── types.ts              # Scenario interface
+│   └── prng.ts                   # Seeded PRNG (seedrandom)
+├── package.json
+├── tsconfig.json
+└── .env.example
+```
+
+Acceptance:
+- Controller reads UTC hour, determines N, invokes N workers
+- Workers generate deterministic events (same seed = same output)
+- Events conform to R17TelemetryV2Event schema
+- Events appear in LocalStack Kinesis stream
+- `joint_3_degradation` scenario shows clear position error increase over 120 ticks
+
+---
+
+## Task 2.6 – Ingestion Service
+**Read first:** `docs/ai/services/ingestion-service.md`
+**Depends on:** Task 2.4, Task 2.5
+
+```
+apps/lambdas/ingestion/
+├── src/
+│   ├── main.ts
+│   ├── handler.ts                # Validates, enriches, fans out
+│   ├── handler.module.ts
+│   └── handler.types.ts
+├── package.json
+├── tsconfig.json
+└── .env.example
+```
+
+Acceptance:
+- Kinesis ESM triggers Lambda on new records
+- Valid events enriched with event_id, trace_id, ingested_at
+- Invalid events go to SQS DLQ with error details
+- Enriched events written to `r17-ingested` stream
+- OTel root span created for each record
+
+---
+
+## Task 2.7 – Signal Agent
+**Read first:** `docs/ai/services/signal-agent.md`
+**Depends on:** Task 2.6
+
+```
+apps/lambdas/signal-agent/
+├── src/
+│   ├── main.ts
+│   ├── handler.ts                # Risk computation
+│   ├── handler.module.ts
+│   ├── handler.types.ts
+│   ├── baseline.ts               # EMA rolling baseline calculator
+│   ├── risk.ts                   # Z-scores + composite risk formula
+│   └── adapters/
+│       └── dynamodb.adapter.ts   # Asset state read/write
+├── package.json
+├── tsconfig.json
+└── .env.example
+```
+
+Acceptance:
+- Reads IngestedEvent from `r17-ingested`
+- Loads/creates asset state from DynamoDB
+- Computes z-scores using EMA rolling baselines
+- Applies LOCKED composite risk formula (weights: 0.35, 0.25, 0.15, 0.15, 0.10)
+- Writes updated state to DynamoDB
+- Emits RiskEvent to `r17-risk-events`
+- `joint_3_degradation` scenario drives risk from nominal → elevated → critical
+- OTel trace continues from ingestion (same trace_id)
+
+---
+
+## End-to-End Validation
+
+After all tasks complete, validate the full pipeline:
+
+1. Deploy all Terraform to LocalStack
+2. Run simulator controller once (manual invoke)
+3. Verify events in `r17-telemetry` stream
+4. Verify ingestion writes to `r17-ingested` stream
+5. Verify signal agent writes to DynamoDB + `r17-risk-events`
+6. Run `joint_3_degradation` scenario — verify risk climbs to critical
+7. Verify OTel traces show full pipeline span hierarchy
+8. Verify DLQ receives malformed events (inject bad record)

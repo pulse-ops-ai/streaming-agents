@@ -1,270 +1,184 @@
-# Streaming Agents — AI Execution Context (Robotics Initiative)
+# Streaming Agents – AI Context Anchor
 
-This document is the authoritative execution context for AI assistants (Kiro, Claude).
+This document is the canonical **rehydration anchor** for AI tools
+(Claude Code, Kiro) and humans.
 
-It defines:
-- The robotics initiative
-- Architectural philosophy
-- Phase discipline
-- What is allowed in the current build cycle
-- What is explicitly forbidden
+If an AI session restarts, this file defines:
+- where the system is
+- what is completed
+- what must not be changed
+- what phase is active
+- what files are safe to modify
 
-If there is a conflict between implementation and this file, this file wins.
-
----
-
-# Project Identity (Locked)
-
-Streaming Agents is a real-time predictive reliability copilot for embodied AI systems.
-
-Primary Use Case:
-Robotic uptime intelligence for autonomous systems operating in warehouses,
-industrial facilities, or research labs.
-
-Prototype Asset:
-Robotic Unit R-17 (Reachy-Mini used as a hardware stand-in).
-
-Category:
-Workplace Efficiency
-
-Tone:
-Enterprise-serious + AI-forward.
-
-This is not a generic telemetry dashboard.
-This is streaming operational intelligence for robotics.
+This file overrides chat history.
 
 ---
 
-# System Philosophy
+## Project Identity
 
-1. Streaming-first (no batch dependencies)
-2. Deterministic risk scoring
-3. Explainability independent of LLM
-4. Agent-oriented separation of responsibilities
-5. Local-first development (Terraform + LocalStack)
-6. AWS sandbox for final demo
-7. Strict phase discipline
-
-LLM enhances narrative explanation.
-LLM does NOT generate core reasoning logic.
+- **Name:** Streaming Agents
+- **Repo:** `github.com/pulse-ops-ai/streaming-agents`
+- **Purpose:** Real-time predictive maintenance copilot for robotic fleet telemetry
+- **Competition:** 10,000 AIdeas (AWS Builder Center) — article due March 13, 2026
+- **Hardware:** Reachy Mini ("R-17") — wireless desktop robot, RPi 5, FastAPI daemon
 
 ---
 
-# Agent Architecture (Locked)
+## Current Phase
 
-## 1. Signal Agent
-- Consumes telemetry stream (Kinesis)
-- Maintains rolling baselines per asset
-- Computes anomaly score (z-score)
-- Computes composite risk score
-- Updates asset state in DynamoDB
-
-## 2. Diagnosis Agent
-- Triggered when risk increases
-- Identifies contributing signals
-- Generates deterministic reasoning capsule
-- Calculates confidence score
-
-## 3. Actions Agent
-- Creates incident records
-- Suppresses duplicate incidents
-- Applies cooldown logic
-- Escalates severity if risk persists
-
-## 4. Conversation Agent
-- Retrieves asset state + incidents
-- Retrieves reasoning capsules
-- Calls Bedrock provider (AWS mode)
-- Uses stub provider (local mode)
-- Returns structured response:
-
-  {
-    summary,
-    details,
-    evidence,
-    recommended_actions,
-    confidence
-  }
+**Phase 2 – Streaming Telemetry Pipeline**
 
 ---
 
-# Robotics Telemetry Model (MVP Locked)
+## Completed Phases
 
-Asset: R-17
-
-Signals:
-
-- joint_3_torque_nm
-- joint_3_temperature_c
-- motor_current_amp
-- joint_position_error_deg
-- error_code (rare events)
-
-We do NOT process:
-- Camera feeds
-- Computer vision
-- Navigation logic
-- Behavior modeling
-- Robotics autonomy control loops
-
-This is strictly a reliability intelligence layer.
+### Phase 1 – Repository & Tooling Foundation (COMPLETE)
+- Monorepo: pnpm (TypeScript) + uv (Python)
+- Pre-commit: 10 hooks (Biome, Ruff, detect-secrets, Terraform fmt)
+- Terraform: `infra/terraform/` with localstack + aws-sandbox workspaces
+- Telemetry v2 Schema:
+  - Zod: `packages/schemas/src/telemetry/r17-telemetry-v2.ts`
+  - JSON Schema: `packages/schemas/generated/r17-telemetry-v2.schema.json`
+  - Pydantic: `python/packages/streaming_agents_core/`
+- Reachy Edge Exporter scaffolded: `python/services/reachy-exporter/`
+- IMU SDK confirmed working alongside daemon (no conflict)
+- Documentation: `docs/02-domain/telemetry-model.md`, `docs/rmi/README.md`
 
 ---
 
-# Composite Risk Model (Conceptual)
+## Active Phase
 
-Composite Risk =
+### Phase 2 – Streaming Telemetry Pipeline
+**Goal:** End-to-end flow: simulated telemetry → Kinesis → ingestion → signal agent → risk score → DynamoDB
 
-0.4 * torque_anomaly
-+ 0.3 * temperature_drift
-+ 0.2 * position_error_deviation
-+ 0.1 * threshold_breach
+#### Architecture (LOCKED)
 
-Requirements:
-- Deterministic
-- Explainable
-- Repeatable for demo scenarios
+Five decoupled services, three producers, two consumers:
 
-The LLM must never invent contributing signals.
-Reasoning capsules must be generated deterministically before LLM narration.
+**Producers** (write to Kinesis `r17-telemetry`):
+1. **Edge Exporter** (Python on RPi) — real hardware telemetry at 2 Hz
+2. **Simulator Controller** (NestJS Lambda, EventBridge cron) — invokes N worker Lambdas
+3. **Simulator Worker** (NestJS Lambda) — generates synthetic fleet telemetry with degradation scenarios
 
----
+**Consumers** (read from Kinesis):
+4. **Ingestion Service** (NestJS Lambda) — schema validation, OTel trace initiation, metadata enrichment, fan-out
+5. **Signal Agent** (NestJS Lambda) — rolling baselines, z-scores, composite risk, DynamoDB state
 
-# Phase Roadmap (Authoritative)
+**Observability Stack:**
+- OpenTelemetry for traces + metrics
+- Amazon Managed Prometheus for metric storage
+- Amazon Managed Grafana for dashboards
+- SQS as buffer between OTel export and processing
 
----
+#### Telemetry v2 Schema (LOCKED — DO NOT MODIFY)
 
-## Phase 0 — Architecture Lock (COMPLETE)
+Direct signals: `board_temperature_c`, `control_loop_freq_hz`, `control_loop_error_count`, `control_mode`, `error_code`
+Derived signals: `accel_magnitude_ms2`, `gyro_magnitude_rads`, `joint_position_error_deg`
+Sampling: 2 Hz per asset
 
-Completed:
-- Robotics initiative defined
-- Agent model finalized
-- Telemetry model locked
-- Risk philosophy defined
-- Toolchain locked (pnpm + uv + Terraform)
+#### Composite Risk Formula (LOCKED — DO NOT MODIFY)
 
----
+```
+composite_risk =
+  0.35 × position_error_z +
+  0.25 × accel_z +
+  0.15 × gyro_z +
+  0.15 × temperature_z +
+  0.10 × threshold_breach
+```
 
-## Phase 1 — Repository & Tooling Foundation (COMPLETE)
+Risk states: nominal (< 0.50), elevated (0.50–0.75), critical (≥ 0.75)
 
-Objective:
-- Clean monorepo structure
-- pnpm workspace operational
-- uv workspace operational
-- Terraform environments defined:
-  - localstack
-  - aws-sandbox
-- Biome + Ruff configured
-- pre-commit + secrets scanning enforced
-- Documentation aligned with robotics initiative
+#### Tasks
 
-Not allowed in this phase:
-- Streaming logic
-- Risk calculation code
-- Incident logic
-- LLM integration
-
-This phase is infrastructure-only.
-
----
-
-## Phase 2 — Streaming Telemetry Pipeline
-
-Allowed work:
-- Telemetry simulator implementation
-- Kinesis stream provisioning
-- Signal Agent implementation
-- Rolling baseline logic
-- Composite risk calculation
-- DynamoDB asset state storage
-
-Not allowed:
-- Conversational interface
-- Voice integration
+```
+2.1  ✅ Telemetry v2 Schema & Reachy Exporter scaffold
+2.2  ⬜ Architecture docs + Kiro agents (THIS TASK)
+2.3  ⬜ Shared packages (core-contracts, core-config, core-telemetry, core-kinesis, lambda-base)
+2.4  ⬜ Infrastructure (Terraform → LocalStack): Kinesis, SQS, EventBridge, DynamoDB, Lambda roles
+2.5  ⬜ Simulator (Controller Lambda + Worker Lambda)
+2.6  ⬜ Ingestion Service (Kinesis trigger → validate → OTel → fan-out)
+2.7  ⬜ Signal Agent (baselines → z-scores → risk → DynamoDB)
+```
 
 ---
 
-## Phase 3 — Incident & Explainability Layer
+## Future Phases (DO NOT START)
 
-Allowed work:
-- Diagnosis Agent
-- Actions Agent
-- Reasoning capsule schema
-- Incident deduplication logic
-- Cooldown enforcement
-
-LLM must not generate reasoning logic.
+### Phase 3 – Diagnosis & Actions Agents
+### Phase 4 – Conversation Agent (Bedrock + Lex + Polly)
+### Phase 5 – Demo UI, Video, Article Finalization
 
 ---
 
-## Phase 4 — Conversational Copilot
+## Monorepo Structure
 
-Allowed work:
-- Conversation Agent
-- Bedrock integration
-- Stub LLM provider (local mode)
-- Structured response contract
-- Optional voice integration
+```
+streaming-agents/
+├── .kiro/
+│   └── agents/                    # Kiro code review agents
+├── packages/
+│   ├── schemas/                   # ✅ Zod schemas + JSON Schema generation
+│   ├── core-contracts/            # ⬜ Event envelope + typed payloads
+│   ├── core-config/               # ⬜ Zod-validated env config
+│   ├── core-telemetry/            # ⬜ OTel wrapper + tag contract
+│   ├── core-kinesis/              # ⬜ Kinesis put/get + DLQ helper
+│   └── lambda-base/               # ⬜ BaseLambdaHandler<TIn, TOut>
+├── apps/
+│   └── lambdas/
+│       ├── simulator-controller/  # ⬜ EventBridge → fan-out
+│       ├── simulator-worker/      # ⬜ Generate v2 events → Kinesis
+│       ├── ingestion/             # ⬜ Kinesis trigger → validate → fan-out
+│       └── signal-agent/          # ⬜ Risk scoring → DynamoDB
+├── python/
+│   ├── packages/
+│   │   └── streaming_agents_core/ # ✅ Pydantic models
+│   └── services/
+│       └── reachy-exporter/       # ✅ Scaffolded (runs on RPi)
+├── contracts/
+│   └── kinesis/                   # ⬜ JSON Schema per event type
+├── infra/
+│   └──                            # ✅ Scaffolded (localstack + aws-sandbox)
+├── tools/
+│   └── generators/                # ⬜ Lambda scaffold generator
+└── docs/
+    ├── ai/                        # Architecture docs for AI tools
+    │   ├── context.md             # THIS FILE
+    │   ├── services/              # Service contracts
+    │   └── architecture/          # Cross-cutting architecture docs
+    └── 02-domain/                 # ✅ Telemetry model docs
+```
 
----
+## Technology Stack
 
-## Phase 5 — Demo & Polish
+| Layer | Technology | Notes |
+|-------|-----------|-------|
+| Runtime | NestJS on AWS Lambda | TypeScript, same patterns as Lattice worker-base |
+| Streaming | Amazon Kinesis Data Streams | Replaces Kafka from Lattice |
+| State | Amazon DynamoDB | Asset state, rolling baselines |
+| Scheduling | Amazon EventBridge | Cron trigger for simulator |
+| Observability | OpenTelemetry → Managed Prometheus + Grafana | Replaces Datadog from Lattice |
+| Edge | Python on Raspberry Pi 5 | Reachy Mini daemon + IMU SDK |
+| IaC | Terraform + LocalStack | Continuous deploy to LocalStack during dev |
+| AI (Phase 4) | Amazon Bedrock, Lex, Polly | Conversation agent |
 
-Allowed work:
-- Deterministic failure injection toggle
-- Risk visualization UI
-- Incident timeline
-- Robot silhouette highlight (Joint 3)
-- Final demo script
-- Builder Center article alignment
+## Core Invariants (DO NOT VIOLATE)
 
----
+- **Kinesis is the backbone** — all telemetry flows through `r17-telemetry` stream
+- **Schema validation at ingestion** — malformed events go to DLQ, never downstream
+- **Risk formula is deterministic** — LLM never computes risk scores
+- **OTel traces follow events** — every event gets a trace ID at ingestion
+- **Lambda-base pattern** — all Lambdas extend `BaseLambdaHandler<TIn, TOut>`
+- **Contracts before code** — JSON Schema in `contracts/kinesis/` is source of truth
+- **Phase discipline** — do not start Phase N+1 until Phase N is complete
+- **LocalStack first** — all Terraform validates against LocalStack before AWS
 
-# Deployment Modes
+## Hardware Reference
 
-## Local Mode
-- Terraform
-- LocalStack Ultimate
-- Stub LLM provider
-- Direct Kinesis publishing allowed
+See `docs/ai/reachy-mini-sdk-reference.md` for complete Reachy Mini API reference.
 
-## AWS Sandbox Mode
-- AWS IoT Core (optional)
-- Kinesis Data Streams
-- Lambda
-- DynamoDB
-- Bedrock
-- Optional Lex/Polly
-
-Sandbox must be fully tear-downable.
-
----
-
-# AI Guardrails
-
-When generating code:
-
-- Respect current phase boundaries
-- Preserve deterministic risk logic
-- Keep reasoning independent of LLM
-- Avoid premature abstraction
-- Avoid unnecessary complexity
-- Do not introduce CV or robotics autonomy features
-- Optimize for demo clarity
-
-If uncertain, default to simplicity.
-
----
-
-# Current Phase Marker
-
-We are currently in:
-
-> Phase 2 — Streaming Telemetry Pipeline
-
-Phase 1 (Repository & Tooling Foundation) is complete.
-Incident logic, LLM integration, and conversational interface must not be implemented until Phase 2 is complete.
-
----
-
-This file enforces architectural discipline and protects the robotics initiative from drift.
+Key constraints:
+- No per-motor torque/current/temperature (Reachy Mini doesn't expose these)
+- IMU requires SDK access via `/venvs/mini_daemon/bin/python`
+- REST API at `http://reachy-mini.local:8000`
+- ~50 Hz control loop, we sample at 2 Hz

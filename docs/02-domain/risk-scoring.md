@@ -1,18 +1,64 @@
-# Risk Scoring Model
+# Risk Scoring Model (Telemetry v2)
 
-## Composite Risk Formula (Locked)
+This document defines the deterministic Phase 2 risk scoring model used by the Signal Agent.
+
+Phase discipline:
+- Phase 2: telemetry → rolling baselines → z-scores → composite risk
+- Phase 3+: incidents + reasoning capsules (not implemented in Phase 2)
+
+---
+
+## Composite Risk Formula (Locked for Phase 2)
 
 composite_risk =
-  0.4 * torque_anomaly +
-  0.3 * temperature_drift +
-  0.2 * position_error_deviation +
-  0.1 * threshold_breach
+  0.35 * position_error_z +
+  0.25 * accel_z +
+  0.15 * gyro_z +
+  0.15 * temperature_z +
+  0.10 * threshold_breach
 
 Where:
-- torque_anomaly = rolling z-score of joint_3_torque_nm
-- temperature_drift = rolling z-score of joint_3_temperature_c
-- position_error_deviation = rolling z-score of joint_position_error_deg
-- threshold_breach = binary flag from hard safety limits (error_code, motor_current_amp)
+- position_error_z = rolling z-score of joint_position_error_deg
+- accel_z = rolling z-score of accel_magnitude_ms2
+- gyro_z = rolling z-score of gyro_magnitude_rads
+- temperature_z = rolling z-score of board_temperature_c
+- threshold_breach = deterministic binary flag (0/1) from hard limits:
+  - control_loop_error_count > 0
+  - control_mode != "enabled"
+  - backend daemon error present
+  - or error_code != null
+
+Notes:
+- All z-scores are computed per-asset using a rolling mean/std window.
+- The composite is clamped to [0, 1].
+- The model is deterministic and explainable; it does not depend on LLM output.
+
+---
+
+## Risk States (Recommended)
+
+- nominal: risk_score < 0.50
+- elevated: 0.50 ≤ risk_score < 0.75
+- critical: risk_score ≥ 0.75
+
+(Thresholds can be tuned, but must remain deterministic.)
+
+---
+
+## Phase 3+ (Future) — Incident Trigger Rule
+
+Incident creation is not part of Phase 2.
+
+In Phase 3, the intended incident trigger is:
+
+If:
+- risk_score >= threshold
+- no active incident exists for asset
+- cooldown window expired
+
+Then:
+- Create new incident
+- Attach deterministic reasoning capsule
 
 ---
 
