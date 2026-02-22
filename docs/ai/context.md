@@ -94,11 +94,11 @@ Risk states: nominal (< 0.50), elevated (0.50–0.75), critical (≥ 0.75)
 ```
 2.1  ✅ Telemetry v2 Schema & Reachy Exporter scaffold
 2.2  ✅ Architecture docs + Kiro agents
-2.3  ⬜ Shared packages (core-contracts, core-config, core-telemetry, core-kinesis, lambda-base)
+2.3  ✅ Shared packages (core-contracts, core-config, core-telemetry, core-kinesis, lambda-base)
 2.4  ✅ Infrastructure (Terraform → LocalStack): Kinesis, SQS, EventBridge, DynamoDB, Lambda roles
-2.5  ⬜ Simulator (Controller Lambda + Worker Lambda)
-2.6  ⬜ Ingestion Service (Kinesis trigger → validate → OTel → fan-out)
-2.7  ⬜ Signal Agent (baselines → z-scores → risk → DynamoDB)
+2.5  ✅ Simulator (Controller Lambda + Worker Lambda)
+2.6  ✅ Ingestion Service (Kinesis trigger → validate → OTel → fan-out)
+2.7  ✅ Signal Agent (baselines → z-scores → risk → DynamoDB)
 ```
 
 ---
