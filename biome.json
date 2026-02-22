@@ -20,7 +20,8 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "noExcessiveCognitiveComplexity": "warn"
+        "noExcessiveCognitiveComplexity": "warn",
+        "noStaticOnlyClass": "off"
       },
       "style": {
         "noNonNullAssertion": "warn"
