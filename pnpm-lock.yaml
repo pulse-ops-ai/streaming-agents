@@ -15,6 +15,16 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/core-contracts:
+    dependencies:
+      '@streaming-agents/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/schemas:
     dependencies:
       zod:
