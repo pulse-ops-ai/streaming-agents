@@ -1,4 +1,6 @@
+import { bootstrapLambda } from '@streaming-agents/lambda-base'
 import { SignalAgentHandler } from './signal-agent.handler.js'
+import { SignalAgentModule } from './signal-agent.module.js'
 
 export { SignalAgentHandler, type SignalAgentConfig } from './signal-agent.handler.js'
 export { AssetStateRepository } from './adapters/dynamodb.adapter.js'
@@ -12,5 +14,4 @@ export {
 } from './risk.js'
 
 // Lambda handler export
-const handlerInstance = new SignalAgentHandler()
-export const handler = handlerInstance.handle.bind(handlerInstance)
+export const handler = bootstrapLambda(SignalAgentModule, SignalAgentHandler)

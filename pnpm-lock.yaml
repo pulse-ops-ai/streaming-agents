@@ -32,6 +32,12 @@ importers:
       '@aws-sdk/client-sqs':
         specifier: ^3.700.0
         version: 3.995.0
+      '@nestjs/common':
+        specifier: ^10.4.0
+        version: 10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^10.4.0
+        version: 10.4.22(@nestjs/common@10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@streaming-agents/core-contracts':
         specifier: workspace:*
         version: link:../../../packages/core-contracts
@@ -47,6 +53,15 @@ importers:
       '@streaming-agents/schemas':
         specifier: workspace:*
         version: link:../../../packages/schemas
+      reflect-metadata:
+        specifier: ^0.2.0
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.0
+        version: 7.8.2
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -63,9 +78,18 @@ importers:
       '@aws-sdk/client-dynamodb':
         specifier: ^3.700.0
         version: 3.995.0
+      '@aws-sdk/client-kinesis':
+        specifier: ^3.700.0
+        version: 3.995.0
       '@aws-sdk/lib-dynamodb':
         specifier: ^3.700.0
         version: 3.995.0(@aws-sdk/client-dynamodb@3.995.0)
+      '@nestjs/common':
+        specifier: ^10.4.0
+        version: 10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^10.4.0
+        version: 10.4.22(@nestjs/common@10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@streaming-agents/core-contracts':
         specifier: workspace:*
         version: link:../../../packages/core-contracts
@@ -78,6 +102,15 @@ importers:
       '@streaming-agents/lambda-base':
         specifier: workspace:*
         version: link:../../../packages/lambda-base
+      reflect-metadata:
+        specifier: ^0.2.0
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.0
+        version: 7.8.2
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -94,6 +127,12 @@ importers:
       '@aws-sdk/client-lambda':
         specifier: ^3.700.0
         version: 3.995.0
+      '@nestjs/common':
+        specifier: ^10.4.0
+        version: 10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^10.4.0
+        version: 10.4.22(@nestjs/common@10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@streaming-agents/core-config':
         specifier: workspace:*
         version: link:../../../packages/core-config
@@ -106,6 +145,15 @@ importers:
       '@streaming-agents/lambda-base':
         specifier: workspace:*
         version: link:../../../packages/lambda-base
+      reflect-metadata:
+        specifier: ^0.2.0
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.0
+        version: 7.8.2
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -119,6 +167,15 @@ importers:
 
   apps/lambdas/simulator-worker:
     dependencies:
+      '@aws-sdk/client-kinesis':
+        specifier: ^3.700.0
+        version: 3.995.0
+      '@nestjs/common':
+        specifier: ^10.4.0
+        version: 10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^10.4.0
+        version: 10.4.22(@nestjs/common@10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@streaming-agents/core-config':
         specifier: workspace:*
         version: link:../../../packages/core-config
@@ -137,9 +194,18 @@ importers:
       '@streaming-agents/schemas':
         specifier: workspace:*
         version: link:../../../packages/schemas
+      reflect-metadata:
+        specifier: ^0.2.0
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.0
+        version: 7.8.2
       seedrandom:
         specifier: ^3.0.5
         version: 3.0.5
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^22.0.0

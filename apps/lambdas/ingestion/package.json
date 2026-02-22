@@ -4,7 +4,7 @@
   "private": true,
   "description": "Ingestion Lambda — validates, enriches, and fans out telemetry events",
   "type": "module",
-  "main": "dist/main.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist",
@@ -13,11 +13,16 @@
   "dependencies": {
     "@aws-sdk/client-kinesis": "^3.700.0",
     "@aws-sdk/client-sqs": "^3.700.0",
+    "@nestjs/common": "^10.4.0",
+    "@nestjs/core": "^10.4.0",
     "@streaming-agents/core-contracts": "workspace:*",
     "@streaming-agents/core-kinesis": "workspace:*",
     "@streaming-agents/core-telemetry": "workspace:*",
     "@streaming-agents/lambda-base": "workspace:*",
-    "@streaming-agents/schemas": "workspace:*"
+    "@streaming-agents/schemas": "workspace:*",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.0",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
