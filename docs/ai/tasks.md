@@ -1,4 +1,4 @@
-# Streaming Agents – Phase 2 Task Execution Plan
+# Streaming Agents – Task Execution Plan
 
 This file is the task queue for Claude Code. Execute tasks in order.
 Mark tasks complete with ✅ as you finish them.
@@ -14,6 +14,8 @@ Before starting any task, verify:
 - [ ] Pre-commit hooks pass
 
 ---
+
+# Phase 2 – Streaming Telemetry Pipeline ✅
 
 ## Task 2.2 – Architecture Docs & Kiro Agents ✅
 **Status:** Complete (created by human + Claude in conversation)
@@ -55,30 +57,21 @@ BaseLambdaHandler and NestJS bootstrap.
 
 ---
 
-## Task 2.4 – Infrastructure (Terraform)
+## Task 2.4 – Infrastructure (Terraform) ✅
 **Read first:** `docs/ai/architecture/kinesis-topology.md`
 **Depends on:** Task 2.3
-
-Create Terraform resources for LocalStack and AWS sandbox:
-
-```
-infra/terraform/
-├── main.tf                       # Provider config, backend
-├── variables.tf                  # Environment-specific vars
-├── kinesis.tf                    # 3 streams
-├── sqs.tf                        # 2 DLQ queues
-├── dynamodb.tf                   # asset-state table
-├── eventbridge.tf                # simulator cron rule
-├── lambda.tf                     # 4 Lambda functions + IAM roles
-├── outputs.tf                    # Stream ARNs, queue URLs, table name
-└── terraform.tfvars.example
-```
-
-Acceptance:
-- `terraform plan` succeeds against LocalStack
-- `terraform apply` creates all resources in LocalStack
+**Status:** Complete. All Terraform resources deployed to LocalStack:
+- 3 Kinesis streams (r17-telemetry, r17-ingested, r17-risk-events) with 2/2/1 shards, 24hr retention
+- 2 SQS DLQ queues (r17-telemetry-dlq, r17-ingested-dlq) with 14-day retention
+- 1 DynamoDB table (asset-state) with PAY_PER_REQUEST, hash key asset_id, TTL on expires_at
+- 1 EventBridge rule (simulator-cron) at rate(1 minute), targets simulator-controller
+- 4 Lambda functions with placeholder code (256MB, correct timeouts: 30s/90s/60s/60s)
+- 4 IAM roles with least-privilege policies (kinesis read/write, dynamodb ops, lambda invoke, sqs send)
+- 2 Kinesis Event Source Mappings (ingestion←r17-telemetry, signal-agent←r17-ingested) with batch_size=100, parallelization_factor=10, bisect_on_error=true, max_retry=3
+- EventBridge target + Lambda permission for simulator-controller invocation
+- All outputs defined (stream ARNs, queue URLs, table name, Lambda ARNs, ESM UUIDs)
 - All resource names prefixed with `streaming-agents-`
-- IAM roles follow least-privilege
+- `tflocal plan` and `tflocal apply` successful, 23 resources created
 
 ---
 
@@ -108,15 +101,244 @@ Acceptance:
 
 ---
 
-## End-to-End Validation
+## End-to-End Validation ✅
 
-After all tasks complete, validate the full pipeline:
+**Status:** Complete. Full pipeline validated on LocalStack. 105 unit tests passing. All 4 Lambdas bundled, deployed, and invoked successfully. Pipeline: simulator → r17-telemetry → ingestion → r17-ingested → signal-agent → DynamoDB + r17-risk-events. Trace propagation confirmed. Risk state transitions confirmed (joint_3_degradation → elevated/critical, healthy → nominal). LocalStack ESM auto-polling inconsistent (known limitation), manual triggers work correctly.
 
-1. Deploy all Terraform to LocalStack
-2. Run simulator controller once (manual invoke)
-3. Verify events in `r17-telemetry` stream
-4. Verify ingestion writes to `r17-ingested` stream
-5. Verify signal agent writes to DynamoDB + `r17-risk-events`
-6. Run `joint_3_degradation` scenario — verify risk climbs to critical
-7. Verify OTel traces show full pipeline span hierarchy
-8. Verify DLQ receives malformed events (inject bad record)
+---
+
+# Phase 3 – Diagnosis & Actions Agents
+
+## Task 3.1 – Service Contracts & Architecture Docs
+**Depends on:** Phase 2 complete
+
+Create service contracts and update architecture docs for Phase 3:
+- `docs/ai/services/diagnosis-agent.md` — service contract
+- `docs/ai/services/actions-agent.md` — service contract
+- `docs/ai/architecture/event-schema-contract.md` — add DiagnosisEvent, ActionEvent types
+- `docs/ai/architecture/kinesis-topology.md` — add r17-diagnosis, r17-actions streams
+- `docs/ai/context.md` — update for Phase 3
+
+## Task 3.2 – Core Contracts Update
+**Read first:** Updated event-schema-contract.md from 3.1
+**Depends on:** Task 3.1
+
+Add new types to `packages/core-contracts/`:
+- `DiagnosisEvent` — Bedrock explanation output (asset_id, risk context, root cause analysis, confidence, recommended actions)
+- `ActionEvent` — recommended action (alert, throttle, shutdown, acknowledge) with severity and target
+- `IncidentRecord` — DynamoDB document for active incidents (opened/escalated/resolved lifecycle)
+
+## Task 3.3 – Infrastructure Update
+**Depends on:** Task 3.1
+
+Add Terraform resources:
+- Kinesis stream: `r17-diagnosis` (1 shard)
+- Kinesis stream: `r17-actions` (1 shard)
+- SQS DLQ: `r17-diagnosis-dlq`
+- DynamoDB table: `streaming-agents-incidents` (hash: incident_id, GSI: asset_id + status)
+- Lambda functions: `diagnosis-agent`, `actions-agent`
+- IAM roles with Bedrock invoke permission for diagnosis-agent
+- Kinesis ESM: diagnosis-agent ← r17-risk-events, actions-agent ← r17-diagnosis
+
+## Task 3.4 – Diagnosis Agent Lambda
+**Read first:** `docs/ai/services/diagnosis-agent.md`
+**Depends on:** Task 3.2, Task 3.3
+
+```
+apps/lambdas/diagnosis-agent/
+```
+
+Extends `BaseLambdaHandler<KinesisStreamEvent, void>`.
+
+Consumes `RiskEvent` from `r17-risk-events`. When risk is `elevated` or `critical`:
+1. Load asset state from DynamoDB (baselines, history, last values)
+2. Build a structured prompt with risk context:
+   - Current z-scores and which signals are contributing
+   - Signal trends (last N values from baselines)
+   - Scenario context (what the robot is, what the signals mean)
+   - Threshold breach details
+3. Call Amazon Bedrock (Claude Sonnet) via `@aws-sdk/client-bedrock-runtime`
+4. Parse response into structured `DiagnosisEvent`:
+   - `root_cause`: concise explanation of likely failure mode
+   - `evidence`: array of signal-specific observations
+   - `confidence`: low/medium/high
+   - `recommended_actions`: array of suggested actions
+   - `severity`: info/warning/critical
+5. Emit `DiagnosisEvent` to `r17-diagnosis` stream
+
+When risk is `nominal`, skip (no Bedrock call — save cost).
+
+Key constraints:
+- Bedrock prompt is templated, not freeform — LLM receives structured data, returns structured response
+- LLM NEVER computes risk scores — it explains scores computed by signal-agent
+- Bedrock response parsed with Zod for safety (malformed LLM output → DLQ)
+- Rate limiting: max 1 Bedrock call per asset per 30 seconds (debounce in DynamoDB)
+
+## Task 3.5 – Actions Agent Lambda
+**Read first:** `docs/ai/services/actions-agent.md`
+**Depends on:** Task 3.4
+
+```
+apps/lambdas/actions-agent/
+```
+
+Extends `BaseLambdaHandler<KinesisStreamEvent, void>`.
+
+Consumes `DiagnosisEvent` from `r17-diagnosis`. Determines appropriate response:
+1. Load or create incident record from DynamoDB (`streaming-agents-incidents`)
+2. Apply action rules (deterministic, NOT LLM):
+   - `severity: info` + no open incident → log only
+   - `severity: warning` + no open incident → create incident, emit alert action
+   - `severity: warning` + existing incident → escalate if sustained > 60s
+   - `severity: critical` → create/escalate incident, emit shutdown recommendation
+3. Emit `ActionEvent` to `r17-actions` stream
+4. Update incident record (status, timeline, action history)
+
+Key constraints:
+- Action rules are deterministic — NO LLM in this agent
+- Incident lifecycle: opened → escalated → resolved (resolved when risk returns to nominal)
+- Deduplication: don't create duplicate incidents for same asset + same root cause
+- Actions are recommendations only — no direct robot control (that's Phase 4 conversation agent's domain)
+
+## Task 3.6 – End-to-End Phase 3 Validation
+**Depends on:** Task 3.4, Task 3.5
+
+Full pipeline test on LocalStack:
+1. Run `joint_3_degradation` scenario (120 events)
+2. Verify signal-agent produces elevated/critical RiskEvents
+3. Verify diagnosis-agent calls Bedrock and produces DiagnosisEvents with root cause
+4. Verify actions-agent creates incident in DynamoDB and emits ActionEvents
+5. Run `healthy` scenario — verify incident resolves, no Bedrock calls for nominal risk
+6. Verify trace propagation through all 6 services
+
+Note: Bedrock may need real AWS credentials even in LocalStack. If not available locally, mock the Bedrock client for LocalStack testing and validate real Bedrock calls in aws-sandbox.
+
+---
+
+# Phase 4 – Conversation Agent
+
+## Task 4.1 – Service Contract & Architecture
+**Depends on:** Phase 3 complete
+
+Design the voice-driven copilot interface:
+- `docs/ai/services/conversation-agent.md` — service contract
+- Architecture: Amazon Lex (intent recognition) → Lambda fulfillment → Bedrock (response generation) → Polly (speech synthesis)
+- Intent model: "What's wrong with R-17?", "Show me the fleet status", "Why is risk critical?", "What should I do?"
+
+## Task 4.2 – Lex Bot Configuration
+**Depends on:** Task 4.1
+
+Create Lex V2 bot with intents:
+- `AssetStatus` — "How is {asset_id}?" / "What's the status of {asset_id}?"
+- `FleetOverview` — "Show me the fleet" / "Any alerts?"
+- `ExplainRisk` — "Why is {asset_id} critical?" / "What's happening with {asset_id}?"
+- `RecommendAction` — "What should I do about {asset_id}?"
+- `AcknowledgeIncident` — "Acknowledge the alert on {asset_id}"
+
+Terraform for Lex bot, intents, slot types, Lambda fulfillment hook.
+
+## Task 4.3 – Fulfillment Lambda
+**Depends on:** Task 4.2
+
+Lambda that handles Lex intent fulfillment:
+1. Receives Lex event with resolved intent + slots
+2. Queries DynamoDB for asset state, incidents, recent diagnosis
+3. Builds context-aware prompt for Bedrock
+4. Returns natural language response for Polly to speak
+5. Includes SSML markup for emphasis on critical information
+
+## Task 4.4 – Polly Integration & Voice Pipeline
+**Depends on:** Task 4.3
+
+Wire Polly for text-to-speech output:
+- Neural voice selection (e.g., Matthew or Joanna)
+- SSML for emphasis: slow down for critical alerts, normal pace for status
+- Audio output via Lex streaming response or pre-generated S3 URLs
+
+## Task 4.5 – End-to-End Voice Demo
+**Depends on:** Task 4.4
+
+Full voice loop validation:
+1. Text input → Lex → intent resolution → Lambda → DynamoDB/Bedrock → response → Polly → audio
+2. Test all 5 intents with real asset data from running pipeline
+3. Record demo interactions for article video
+
+---
+
+# Phase 5 – Demo, Article & Deployment
+
+## Task 5.1 – AWS Sandbox Deployment
+**Depends on:** Phase 4 complete
+
+Deploy full stack to real AWS using $200 credits:
+1. `terraform apply` in aws-sandbox workspace
+2. Deploy all Lambda code via CI or manual bundle + update
+3. Enable EventBridge cron for simulator
+4. Verify full pipeline with real Kinesis ESMs (no LocalStack limitations)
+5. Verify Bedrock calls work with real credentials
+6. Set up Managed Grafana dashboard for demo
+
+## Task 5.2 – Edge Exporter on Real Robot
+**Depends on:** Task 5.1
+
+Complete the Reachy exporter implementation:
+1. Finish `python/services/reachy-exporter/` implementation
+2. Connect to real AWS Kinesis from RPi
+3. Validate real sensor data flows through full pipeline
+4. Capture video of R-17 moving while dashboard shows telemetry
+
+## Task 5.3 – Grafana Dashboard
+**Depends on:** Task 5.1
+
+Create Amazon Managed Grafana dashboard:
+- Fleet overview: all assets with current risk state (color-coded)
+- Asset detail: time-series of signals, z-scores, composite risk
+- Pipeline health: ingestion rate, DLQ counts, processing latency
+- Incident timeline: open/escalated/resolved incidents
+- OTel trace viewer: click any event to see full pipeline trace
+
+## Task 5.4 – Demo Video
+**Depends on:** Task 5.2, Task 5.3
+
+Record 30–60 second demo video:
+1. R-17 robot on desk, physically moving
+2. Split screen: robot + Grafana dashboard
+3. Trigger degradation scenario while filming
+4. Risk climbs from nominal → elevated → critical on dashboard
+5. Voice copilot explains what's happening
+6. Show OTel trace for a single event through full pipeline
+
+## Task 5.5 – Article Finalization
+**Depends on:** Task 5.4
+
+Finalize `builder-center-article.md`:
+- Update draft with real screenshots and architecture diagram
+- Embed demo video
+- Sync risk formula weights to match LOCKED formula
+- Add "What I Learned" section with real lessons from building
+- Cover image: R-17 photo with dashboard overlay
+- Submit to AWS Builder Center by March 13, 2026
+
+## Task 5.6 – Community Engagement
+**Depends on:** Task 5.5
+
+Post-submission (March 13–20):
+- Share article on LinkedIn, Twitter, dev communities
+- Cross-post highlights to r/aws, r/robotics, Hacker News
+- Engage with comments and questions on Builder Center
+- Target: top 300 most-liked articles by March 20
+
+---
+
+# Milestone Summary
+
+| Phase | Status | Tests | Services |
+|-------|--------|-------|----------|
+| Phase 1 – Tooling | ✅ Complete | — | — |
+| Phase 2 – Pipeline | ✅ Complete | 105 | 4 Lambdas, 5 packages |
+| Phase 3 – AI Agents | ⬜ Active | — | 2 Lambdas (diagnosis, actions) |
+| Phase 4 – Voice | ⬜ Planned | — | 1 Lambda (fulfillment) + Lex + Polly |
+| Phase 5 – Demo | ⬜ Planned | — | Grafana, video, article |
+
+**Deadline:** March 13, 2026 (article submission)
+**Buffer:** March 20, 2026 (community voting closes)

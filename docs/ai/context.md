@@ -26,7 +26,7 @@ This file overrides chat history.
 
 ## Current Phase
 
-**Phase 2 – Streaming Telemetry Pipeline**
+**Phase 3 – Diagnosis & Actions Agents**
 
 ---
 
@@ -42,72 +42,50 @@ This file overrides chat history.
   - Pydantic: `python/packages/streaming_agents_core/`
 - Reachy Edge Exporter scaffolded: `python/services/reachy-exporter/`
 - IMU SDK confirmed working alongside daemon (no conflict)
-- Documentation: `docs/02-domain/telemetry-model.md`, `docs/rmi/README.md`
+
+### Phase 2 – Streaming Telemetry Pipeline (COMPLETE)
+
+**Shared Packages (5):**
+- `@streaming-agents/core-contracts` — IngestedEvent, RiskEvent, DLQMessage, SimulatorWorkerPayload, AssetState
+- `@streaming-agents/core-config` — Zod-validated env loading, Secrets Manager resolution (NODE_ENV-aware)
+- `@streaming-agents/core-telemetry` — OTel SDK init, TelemetryService, LoggerService, NestJS module
+- `@streaming-agents/core-kinesis` — KinesisProducer (batching, partial retry), KinesisConsumer, DLQPublisher
+- `@streaming-agents/lambda-base` — BaseLambdaHandler<TIn,TOut>, bootstrapLambda(), KinesisLambdaAdapter
+
+**Lambda Services (4):**
+- `simulator-controller` — EventBridge cron → fan-out N workers per load schedule
+- `simulator-worker` — 5 deterministic scenarios (seedrandom PRNG), publishes to r17-telemetry
+- `ingestion` — Schema validation, OTel root span, metadata enrichment, fan-out to r17-ingested, DLQ routing
+- `signal-agent` — EMA baselines, z-scores, composite risk (LOCKED formula), DynamoDB state, RiskEvent emission
+
+**Infrastructure (23 Terraform resources):**
+- 3 Kinesis streams (r17-telemetry, r17-ingested, r17-risk-events)
+- 2 SQS DLQ queues
+- 1 DynamoDB table (asset-state)
+- 1 EventBridge rule (simulator-cron)
+- 4 Lambda functions + IAM roles + ESM mappings
+- Lambda bundler: `tools/bundle-lambda.ts` (esbuild)
+
+**Test Coverage:** 105 unit tests passing
+**E2E Validated:** Full pipeline on LocalStack — simulator → ingestion → signal-agent → DynamoDB + risk events
 
 ---
 
 ## Active Phase
 
-### Phase 2 – Streaming Telemetry Pipeline
-**Goal:** End-to-end flow: simulated telemetry → Kinesis → ingestion → signal agent → risk score → DynamoDB
-
-#### Architecture (LOCKED)
-
-Five decoupled services, three producers, two consumers:
-
-**Producers** (write to Kinesis `r17-telemetry`):
-1. **Edge Exporter** (Python on RPi) — real hardware telemetry at 2 Hz
-2. **Simulator Controller** (NestJS Lambda, EventBridge cron) — invokes N worker Lambdas
-3. **Simulator Worker** (NestJS Lambda) — generates synthetic fleet telemetry with degradation scenarios
-
-**Consumers** (read from Kinesis):
-4. **Ingestion Service** (NestJS Lambda) — schema validation, OTel trace initiation, metadata enrichment, fan-out
-5. **Signal Agent** (NestJS Lambda) — rolling baselines, z-scores, composite risk, DynamoDB state
-
-**Observability Stack:**
-- OpenTelemetry for traces + metrics
-- Amazon Managed Prometheus for metric storage
-- Amazon Managed Grafana for dashboards
-- SQS as buffer between OTel export and processing
-
-#### Telemetry v2 Schema (LOCKED — DO NOT MODIFY)
-
-Direct signals: `board_temperature_c`, `control_loop_freq_hz`, `control_loop_error_count`, `control_mode`, `error_code`
-Derived signals: `accel_magnitude_ms2`, `gyro_magnitude_rads`, `joint_position_error_deg`
-Sampling: 2 Hz per asset
-
-#### Composite Risk Formula (LOCKED — DO NOT MODIFY)
-
-```
-composite_risk =
-  0.35 × position_error_z +
-  0.25 × accel_z +
-  0.15 × gyro_z +
-  0.15 × temperature_z +
-  0.10 × threshold_breach
-```
-
-Risk states: nominal (< 0.50), elevated (0.50–0.75), critical (≥ 0.75)
-
-#### Tasks
-
-```
-2.1  ✅ Telemetry v2 Schema & Reachy Exporter scaffold
-2.2  ✅ Architecture docs + Kiro agents
-2.3  ✅ Shared packages (core-contracts, core-config, core-telemetry, core-kinesis, lambda-base)
-2.4  ✅ Infrastructure (Terraform → LocalStack): Kinesis, SQS, EventBridge, DynamoDB, Lambda roles
-2.5  ✅ Simulator (Controller Lambda + Worker Lambda)
-2.6  ✅ Ingestion Service (Kinesis trigger → validate → OTel → fan-out)
-2.7  ✅ Signal Agent (baselines → z-scores → risk → DynamoDB)
-```
-
----
-
-## Future Phases (DO NOT START)
-
 ### Phase 3 – Diagnosis & Actions Agents
-### Phase 4 – Conversation Agent (Bedrock + Lex + Polly)
-### Phase 5 – Demo UI, Video, Article Finalization
+**Goal:** When risk is elevated/critical, explain WHY and recommend WHAT to do.
+
+Two new Lambda services consuming from `r17-risk-events`:
+
+1. **Diagnosis Agent** — Uses Amazon Bedrock (Claude) to analyze risk context and generate human-readable explanations of what's failing and why
+2. **Actions Agent** — Determines appropriate response actions based on risk state and diagnosis (alert, throttle, shutdown recommendation)
+
+### Phase 4 – Conversation Agent
+**Goal:** Voice-driven AI copilot interface using Amazon Bedrock, Lex, and Polly.
+
+### Phase 5 – Demo, Article, Deployment
+**Goal:** Demo video, architecture screenshots, article finalization, deploy to real AWS.
 
 ---
 
@@ -116,20 +94,22 @@ Risk states: nominal (< 0.50), elevated (0.50–0.75), critical (≥ 0.75)
 ```
 streaming-agents/
 ├── .kiro/
-│   └── agents/                    # Kiro code review agents
+│   └── agents/                    # Kiro code review agents (5)
 ├── packages/
 │   ├── schemas/                   # ✅ Zod schemas + JSON Schema generation
-│   ├── core-contracts/            # ⬜ Event envelope + typed payloads
-│   ├── core-config/               # ⬜ Zod-validated env config
-│   ├── core-telemetry/            # ⬜ OTel wrapper + tag contract
-│   ├── core-kinesis/              # ⬜ Kinesis put/get + DLQ helper
-│   └── lambda-base/               # ⬜ BaseLambdaHandler<TIn, TOut>
+│   ├── core-contracts/            # ✅ Event envelope + typed payloads
+│   ├── core-config/               # ✅ Zod-validated env config + Secrets Manager
+│   ├── core-telemetry/            # ✅ OTel wrapper + NestJS module
+│   ├── core-kinesis/              # ✅ Kinesis put/get + DLQ helper
+│   └── lambda-base/               # ✅ BaseLambdaHandler<TIn, TOut>
 ├── apps/
 │   └── lambdas/
-│       ├── simulator-controller/  # ⬜ EventBridge → fan-out
-│       ├── simulator-worker/      # ⬜ Generate v2 events → Kinesis
-│       ├── ingestion/             # ⬜ Kinesis trigger → validate → fan-out
-│       └── signal-agent/          # ⬜ Risk scoring → DynamoDB
+│       ├── simulator-controller/  # ✅ EventBridge → fan-out
+│       ├── simulator-worker/      # ✅ Generate v2 events → Kinesis
+│       ├── ingestion/             # ✅ Kinesis trigger → validate → fan-out
+│       ├── signal-agent/          # ✅ Risk scoring → DynamoDB
+│       ├── diagnosis-agent/       # ⬜ Phase 3
+│       └── actions-agent/         # ⬜ Phase 3
 ├── python/
 │   ├── packages/
 │   │   └── streaming_agents_core/ # ✅ Pydantic models
@@ -138,14 +118,16 @@ streaming-agents/
 ├── contracts/
 │   └── kinesis/                   # ⬜ JSON Schema per event type
 ├── infra/
-│   └──                            # ✅ Scaffolded (localstack + aws-sandbox)
+│   └──                            # ✅ 23 resources deployed to LocalStack
 ├── tools/
+│   ├── bundle-lambda.ts           # ✅ esbuild Lambda bundler
 │   └── generators/                # ⬜ Lambda scaffold generator
 └── docs/
     ├── ai/                        # Architecture docs for AI tools
     │   ├── context.md             # THIS FILE
-    │   ├── services/              # Service contracts
-    │   └── architecture/          # Cross-cutting architecture docs
+    │   ├── tasks.md               # Task execution plan
+    │   ├── services/              # Service contracts (4 complete + 2 Phase 3)
+    │   └── architecture/          # Cross-cutting architecture docs (4)
     └── 02-domain/                 # ✅ Telemetry model docs
 ```
 
@@ -153,23 +135,43 @@ streaming-agents/
 
 | Layer | Technology | Notes |
 |-------|-----------|-------|
-| Runtime | NestJS on AWS Lambda | TypeScript, same patterns as Lattice worker-base |
-| Streaming | Amazon Kinesis Data Streams | Replaces Kafka from Lattice |
+| Runtime | NestJS on AWS Lambda | TypeScript, BaseLambdaHandler pattern |
+| Streaming | Amazon Kinesis Data Streams | 3 streams, partition by asset_id |
 | State | Amazon DynamoDB | Asset state, rolling baselines |
 | Scheduling | Amazon EventBridge | Cron trigger for simulator |
-| Observability | OpenTelemetry → Managed Prometheus + Grafana | Replaces Datadog from Lattice |
+| AI (Phase 3) | Amazon Bedrock (Claude) | Diagnosis explanations |
+| Voice (Phase 4) | Amazon Lex + Polly | Conversation agent |
+| Observability | OpenTelemetry → Managed Prometheus + Grafana | Trace propagation validated |
 | Edge | Python on Raspberry Pi 5 | Reachy Mini daemon + IMU SDK |
-| IaC | Terraform + LocalStack | Continuous deploy to LocalStack during dev |
-| AI (Phase 4) | Amazon Bedrock, Lex, Polly | Conversation agent |
+| IaC | Terraform + LocalStack | 23 resources, esbuild bundling |
+
+## Telemetry v2 Schema (LOCKED — DO NOT MODIFY)
+
+Direct signals: `board_temperature_c`, `control_loop_freq_hz`, `control_loop_error_count`, `control_mode`, `error_code`
+Derived signals: `accel_magnitude_ms2`, `gyro_magnitude_rads`, `joint_position_error_deg`
+Sampling: 2 Hz per asset
+
+## Composite Risk Formula (LOCKED — DO NOT MODIFY)
+
+```
+composite_risk =
+  0.35 × abs(position_error_z) +
+  0.25 × abs(accel_z) +
+  0.15 × abs(gyro_z) +
+  0.15 × abs(temperature_z) +
+  0.10 × threshold_breach
+```
+Normalize: `Math.min(composite_risk / 3.0, 1.0)`
+Risk states: nominal (< 0.50), elevated (0.50–0.75), critical (≥ 0.75)
 
 ## Core Invariants (DO NOT VIOLATE)
 
-- **Kinesis is the backbone** — all telemetry flows through `r17-telemetry` stream
+- **Kinesis is the backbone** — all telemetry flows through Kinesis streams
 - **Schema validation at ingestion** — malformed events go to DLQ, never downstream
 - **Risk formula is deterministic** — LLM never computes risk scores
-- **OTel traces follow events** — every event gets a trace ID at ingestion
+- **OTel traces follow events** — trace_id created at ingestion, propagated through pipeline
 - **Lambda-base pattern** — all Lambdas extend `BaseLambdaHandler<TIn, TOut>`
-- **Contracts before code** — JSON Schema in `contracts/kinesis/` is source of truth
+- **Contracts before code** — service contracts in `docs/ai/services/` define boundaries
 - **Phase discipline** — do not start Phase N+1 until Phase N is complete
 - **LocalStack first** — all Terraform validates against LocalStack before AWS
 
