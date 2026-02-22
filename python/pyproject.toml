@@ -11,7 +11,10 @@ readme = "README.md"
 license = { text = "MIT" }
 
 [dependency-groups]
-dev = ["ruff>=0.9.6"]
+dev = ["ruff>=0.9.6", "streaming-agents-core"]
+
+[tool.uv.sources]
+streaming-agents-core = { workspace = true }
 
 # Workspace root — src-layout so hatchling resolves cleanly.
 [tool.hatch.build.targets.wheel]
