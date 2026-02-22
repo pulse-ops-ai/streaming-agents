@@ -50,6 +50,8 @@ htmlcov/
 # LocalStack
 .localstack/
 volume/
+docker/localstack/*
+!docker/localstack/.gitkeep
 awscliv2.zip
 THIRD_PARTY_LICENSES
 aws/install

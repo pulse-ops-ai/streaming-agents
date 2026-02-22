@@ -1,0 +1,24 @@
+services:
+  localstack:
+    container_name: streaming-agents-localstack
+    image: localstack/localstack-pro:latest
+    ports:
+      - "4566:4566"            # LocalStack Gateway
+      - "4510-4559:4510-4559"  # External services port range
+    environment:
+      # Services needed for Phase 2
+      - SERVICES=kinesis,dynamodb,lambda,s3,sqs,iam,events,logs
+      - DEBUG=0
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
+      - PERSISTENCE=1
+    volumes:
+      - "${LOCALSTACK_VOLUME_DIR:-./docker/localstack}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - streaming-agents
+
+networks:
+  streaming-agents:
+    name: streaming-agents
+    driver: bridge

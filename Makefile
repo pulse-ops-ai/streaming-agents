@@ -23,7 +23,11 @@ clean: ## Clean build artifacts
 	pnpm run clean
 
 infra-up: ## Spin up LocalStack infra
-	cd infra/envs/localstack && terraform init && terraform apply -auto-approve
+	docker compose up -d
+	@echo "Waiting for LocalStack to be ready..."
+	@sleep 5
+	cd infra/envs/localstack && tflocal init && tflocal apply -auto-approve
 
 infra-down: ## Tear down LocalStack infra
-	cd infra/envs/localstack && terraform destroy -auto-approve
+	cd infra/envs/localstack && tflocal destroy -auto-approve || true
+	docker compose down -v
