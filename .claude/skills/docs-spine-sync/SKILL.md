@@ -109,6 +109,15 @@ Verify consistent use of:
 - `README.md` phase table matches.
 - `docs/ai/tasks.md` marks correct phase as CURRENT.
 
+### 5. Skills integrity checks
+
+- Verify `.claude/skills/README.md` indexes all skill directories present
+- Verify `.kiro/skills/` mirror is in sync (symlinks resolve)
+- Verify Skill 06 and Skill 07 reference the correct telemetry contract:
+  - v1 for simulator
+  - v2 for real Reachy exporter
+- Verify no skill claims incidents/LLM are present before their phase
+
 ## Outputs
 
 | Artifact | Result |

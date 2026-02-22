@@ -26,6 +26,7 @@ Scaffold and maintain the Builder Center article draft (`docs/07-article/builder
 | Demo script | `docs/00-overview/demo-script.md` |
 | Cover image notes | `docs/07-article/cover-image-notes.md` |
 | Demo assets | `docs/07-article/demo-assets.md` |
+| Reachy mapping | `docs/02-domain/reachy-telemetry-mapping.md` |
 | README | `README.md` |
 
 ## Preconditions
@@ -79,6 +80,14 @@ The article must contain these sections (in order):
 - Telemetry signals match the locked MVP list (5 signals).
 - Risk formula weights match `docs/ai/context.md`.
 - Deployment modes (LocalStack + AWS sandbox) accurately described.
+- Telemetry contract:
+  - If describing real hardware ingestion, reference `r17.telemetry.v2` and `docs/02-domain/reachy-telemetry-mapping.md`.
+  - If describing simulator-only, reference `r17.telemetry.v1`.
+  - Do not claim motor torque/current are directly measured unless the exporter confirms those fields are direct.
+- Real Reachy metrics (v2) are sourced from:
+  - `/api/state/full` (head_joints + target_head_joints)
+  - `/api/daemon/status` (control loop stats)
+  - `mini.imu` (accelerometer, gyroscope, board temperature)
 
 ## Outputs
 

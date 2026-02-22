@@ -59,3 +59,68 @@ The `simulator` source generates telemetry that follows the same schema but does
 - Error codes are emitted only when degradation exceeds safety thresholds.
 
 The simulator uses a fixed random seed for reproducible demo scenarios.
+
+## Derived Metrics (telemetry v2)
+
+The exporter emits `r17.telemetry.v2` metrics using a mix of direct and derived values.
+
+### Sampling
+
+- `sampling_hz`: configurable (default: 2.0 Hz)
+- `dt_s`: measured time delta between successive samples (`timestamp[i] - timestamp[i-1]`) in seconds
+
+### Accelerometer magnitude (vibration proxy)
+
+Source: `mini.imu["accelerometer"]` → `[ax, ay, az]` in m/s²
+
+Formula:
+
+- `accel_magnitude_ms2 = sqrt(ax^2 + ay^2 + az^2)`
+
+Notes:
+- This captures overall vibration/acceleration energy.
+- Optional (for later): maintain a rolling baseline; Phase 2 only emits the raw magnitude.
+
+### Gyroscope magnitude (rotational instability proxy)
+
+Source: `mini.imu["gyroscope"]` → `[gx, gy, gz]` in rad/s
+
+Formula:
+
+- `gyro_magnitude_rads = sqrt(gx^2 + gy^2 + gz^2)`
+
+Notes:
+- Spikes may indicate unexpected rotational movement or mechanical play.
+
+### Joint position error (actuator struggle signal)
+
+Sources:
+- Actual joints: `/api/state/full?with_head_joints=true` → `head_joints[]` (radians)
+- Target joints: `/api/state/full?with_target_head_joints=true` → `target_head_joints[]` (radians)
+
+Definition:
+- We select a representative monitored joint index: `J3_INDEX = 2` (0-based index into `head_joints` arrays)
+- `actual_rad = head_joints[J3_INDEX]`
+- `target_rad = target_head_joints[J3_INDEX]`
+
+Formula:
+
+- `error_rad = abs(target_rad - actual_rad)`
+- `joint_position_error_deg = error_rad * (180.0 / pi)`
+
+Fallback rule:
+- If `target_head_joints` is missing/null, set `joint_position_error_deg = 0` and set a label:
+  - `labels.position_error_source = "missing_target"`
+
+### Daemon control loop metrics (system health)
+
+Source: `/api/daemon/status`
+
+Extract:
+
+- `control_loop_freq_hz = backend_status.control_loop_stats.mean_control_loop_frequency`
+- `control_loop_max_interval_ms = backend_status.control_loop_stats.max_control_loop_interval * 1000.0`
+- `control_loop_error_count = backend_status.control_loop_stats.nb_error`
+
+Notes:
+- Do not parse `control_loop_stats.motor_controller` (string). Store it only as debug text if needed.

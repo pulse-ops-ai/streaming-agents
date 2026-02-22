@@ -145,7 +145,7 @@ Completed:
 
 ---
 
-## Phase 1 — Repository & Tooling Foundation (CURRENT PHASE)
+## Phase 1 — Repository & Tooling Foundation (COMPLETE)
 
 Objective:
 - Clean monorepo structure
@@ -260,9 +260,10 @@ If uncertain, default to simplicity.
 
 We are currently in:
 
-> Phase 1 — Repository & Tooling Foundation
+> Phase 2 — Streaming Telemetry Pipeline
 
-Streaming and risk logic must not be implemented until Phase 1 is complete.
+Phase 1 (Repository & Tooling Foundation) is complete.
+Incident logic, LLM integration, and conversational interface must not be implemented until Phase 2 is complete.
 
 ---
 

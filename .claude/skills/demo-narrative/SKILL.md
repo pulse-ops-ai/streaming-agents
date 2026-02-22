@@ -36,28 +36,40 @@ Define, validate, and rehearse the deterministic demo flow so that it runs relia
 
 ## Steps
 
-### 1. Define the narrative arc
+### 1. Define the narrative arc (phase-aware)
 
-```
-[00:00] Start — Dashboard shows R-17 in healthy state
-[00:15] Trigger — Activate degradation injection toggle
-[00:30] Drift — Telemetry shows torque increasing, temperature rising
+#### Phase 2 demo (telemetry → risk only; no incidents; no LLM)
+
+[00:00] Start — Dashboard shows R-17 nominal telemetry
+[00:15] Trigger — Activate degradation injection OR move Reachy head to induce measurable change
+[00:30] Drift — accel/gyro magnitude rises and joint_position_error increases
 [01:00] Detection — Signal Agent computes rising composite risk score
-[01:15] Threshold — Risk crosses threshold
-[01:30] Incident — Actions Agent creates incident with reasoning capsule
-[01:45] Query — Operator asks: "What is failing?"
-[02:00] Response — Copilot returns structured explanation
-[02:15] Follow-up — "Why?" / "What should we do next?"
-[02:30] Resolution — Recommended actions displayed
-[02:45] Wrap — Summary of what happened, proactive intelligence
-```
+[01:30] Threshold — Risk crosses threshold (state becomes elevated/critical)
+[02:00] Evidence — Show z-scores / components and the raw telemetry trend
+[02:30] Wrap — “This is proactive reliability intelligence; incidents come in Phase 3”
+
+#### Phase 3+ demo (adds incidents)
+
+Same as Phase 2, plus:
+[01:45] Incident — Actions Agent creates incident with deterministic reasoning capsule
+
+#### Phase 4+ demo (adds conversational queries)
+
+Same as Phase 3, plus:
+[02:00] Query — Operator asks: "What is failing?" / "Why?" / "What should we do next?"
 
 ### 2. Validate determinism
 
 The demo must produce the same results every time:
 
-- Degradation curve is pre-defined, not random.
+- Degradation curve / change trigger is deterministic (exporter or simulator).
 - Risk threshold crossing happens at a predictable time.
+- Telemetry inputs are stable:
+  - board_temperature_c
+  - accel_magnitude_ms2
+  - gyro_magnitude_rads
+  - joint_position_error_deg
+  - control_loop_freq_hz / error_count
 - Incident creation is deterministic given the same inputs.
 - Reasoning capsule content is deterministic.
 - Only the LLM narration may vary slightly (acceptable).

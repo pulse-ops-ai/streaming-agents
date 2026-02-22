@@ -66,6 +66,41 @@ Authoritative source: `packages/schemas/src/telemetry/r17-risk-update.ts` (Zod)
 
 ---
 
+## Schema: `r17.telemetry.v2`
+
+Authoritative source: `packages/schemas/src/telemetry/r17-telemetry-v2.ts` (Zod)
+
+Extends v1 with IMU-derived metrics, daemon control loop stats, and board temperature for real Reachy-Mini hardware telemetry. IMU fields are nullable because the `reachy_mini` SDK may not be installed on all hosts.
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `schema_version` | string | `"r17.telemetry.v2"` (literal) | Fixed schema identifier |
+| `event_id` | string | min 1 char (ULID) | Unique event identifier |
+| `asset_id` | string | `"r-17"` (literal) | Asset identifier, locked for MVP |
+| `timestamp` | string | ISO 8601 UTC | Measurement timestamp |
+| `source` | enum | `"simulator"` \| `"reachy-daemon"` \| `"reachy-sdk"` \| `"reachy-exporter"` \| `"replay"` | Origin of reading |
+| `sequence` | integer | >= 0 | Monotonic counter per source |
+| `sampling_hz` | number | > 0 | Sampling rate in Hz |
+| `joint_position_error_deg` | number | >= 0 | Absolute positional deviation in degrees |
+| `board_temperature_c` | number \| null | default null | Board temperature in Celsius |
+| `accel_magnitude_ms2` | number \| null | >= 0, default null | Accelerometer magnitude (vibration proxy) |
+| `gyro_magnitude_rads` | number \| null | >= 0, default null | Gyroscope magnitude (rotational instability proxy) |
+| `control_mode` | enum \| null | `"idle"` \| `"compliant"` \| `"stiff"` \| `"unknown"`, default null | Robot control mode |
+| `control_loop_stats` | object \| null | default null | Daemon control loop statistics (see below) |
+| `error_code` | string \| null | default null | Rare discrete fault code |
+
+### `control_loop_stats` object
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `freq_hz` | number | >= 0 | Mean control loop frequency in Hz |
+| `max_interval_ms` | number | >= 0 | Maximum control loop interval in ms |
+| `error_count` | integer | >= 0 | Cumulative error count |
+
+Additional properties are **forbidden** (strict mode).
+
+---
+
 ## Implementation Locations
 
 | Language | Package | Path |
@@ -167,6 +202,54 @@ Corresponding risk update (critical):
     "position_error": 0.2,
     "threshold_breach": 0.1
   }
+}
+```
+
+---
+
+### v2 Normal Operation (with IMU)
+
+```json
+{
+  "schema_version": "r17.telemetry.v2",
+  "event_id": "01JMR5A3X7KQZV8Y5B6WDTH4FG",
+  "asset_id": "r-17",
+  "timestamp": "2026-02-21T15:00:00.000Z",
+  "source": "reachy-exporter",
+  "sequence": 42,
+  "sampling_hz": 2,
+  "joint_position_error_deg": 0.08,
+  "board_temperature_c": 38.2,
+  "accel_magnitude_ms2": 9.81,
+  "gyro_magnitude_rads": 0.02,
+  "control_mode": "stiff",
+  "control_loop_stats": {
+    "freq_hz": 100.5,
+    "max_interval_ms": 12.3,
+    "error_count": 0
+  },
+  "error_code": null
+}
+```
+
+### v2 Without IMU (SDK not installed)
+
+```json
+{
+  "schema_version": "r17.telemetry.v2",
+  "event_id": "01JMR5B4W2HNYF9K8XTQB5AMRZ",
+  "asset_id": "r-17",
+  "timestamp": "2026-02-21T15:01:00.000Z",
+  "source": "reachy-exporter",
+  "sequence": 43,
+  "sampling_hz": 2,
+  "joint_position_error_deg": 0.15,
+  "board_temperature_c": null,
+  "accel_magnitude_ms2": null,
+  "gyro_magnitude_rads": null,
+  "control_mode": "compliant",
+  "control_loop_stats": null,
+  "error_code": null
 }
 ```
 

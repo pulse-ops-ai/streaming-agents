@@ -8,7 +8,7 @@ No cross-phase leakage is allowed.
 
 ---
 
-# Phase 1 — Repository & Tooling Foundation (CURRENT)
+# Phase 1 — Repository & Tooling Foundation (COMPLETE)
 
 ## Objective
 Establish a stable, reproducible development environment before any streaming logic is implemented.
@@ -68,18 +68,38 @@ Establish a stable, reproducible development environment before any streaming lo
 
 ---
 
-⚠ No streaming logic allowed in Phase 1.
+Phase 1 complete. All workspaces, tooling, hooks, and infrastructure configs validated.
 
 ---
 
-# Phase 2 — Streaming Telemetry Pipeline
+# Phase 2 — Streaming Telemetry Pipeline (CURRENT)
 
 ## Objective
 Implement deterministic streaming telemetry and composite risk calculation.
 
 ---
 
-## 1️⃣ Telemetry Simulator
+## 1️⃣ Telemetry v2 Schema & Reachy Exporter
+
+- [x] Define `r17.telemetry.v2` Zod schema (`packages/schemas/src/telemetry/r17-telemetry-v2.ts`)
+- [x] Add v2 exports to `packages/schemas/src/telemetry/index.ts`
+- [x] Update JSON Schema generator and regenerate (`r17-telemetry-v2.schema.json`)
+- [x] Add v2 Pydantic models (`TelemetrySourceV2`, `ControlMode`, `ControlLoopStats`, `R17TelemetryV2Event`)
+- [x] Export v2 models from `streaming_agents_core`
+- [x] Scaffold `reachy-exporter` service (`python/services/reachy-exporter/`)
+  - [x] `config.py` — env var config + `J3_INDEX` constant
+  - [x] `client.py` — async httpx client for daemon REST API
+  - [x] `imu.py` — optional IMU reader with graceful fallback
+  - [x] `publisher.py` — Kinesis publisher with dry-run mode
+  - [x] `main.py` — CLI entry point (`--dry-run`, `--once`, `--log-level`)
+- [x] Add `reachy_exporter` to Ruff known-first-party
+- [x] Update `docs/02-domain/telemetry-model.md` with v2 schema table + example payloads
+- [x] Create `docs/rmi/README.md`
+- [x] Verify: `pnpm build`, `generate:jsonschema`, `biome check`, `uv sync`, `ruff check`, Python import OK
+
+---
+
+## 2️⃣ Telemetry Simulator
 
 - [ ] Implement R-17 telemetry generator
 - [ ] Implement deterministic degradation toggle
@@ -88,7 +108,7 @@ Implement deterministic streaming telemetry and composite risk calculation.
 
 ---
 
-## 2️⃣ Kinesis Stream
+## 3️⃣ Kinesis Stream
 
 - [ ] Provision stream via Terraform module
 - [ ] Confirm stream reachable in LocalStack
@@ -96,7 +116,7 @@ Implement deterministic streaming telemetry and composite risk calculation.
 
 ---
 
-## 3️⃣ Signal Agent
+## 4️⃣ Signal Agent
 
 - [ ] Implement rolling baseline logic
 - [ ] Implement z-score calculation
