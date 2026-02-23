@@ -76,10 +76,17 @@ This file overrides chat history.
 ### Phase 3 – Diagnosis & Actions Agents
 **Goal:** When risk is elevated/critical, explain WHY and recommend WHAT to do.
 
-Two new Lambda services consuming from `r17-risk-events`:
+**Task 3.1 — Service Contracts & Architecture Docs** ✅
+- `docs/ai/services/diagnosis-agent.md` — service contract
+- `docs/ai/services/actions-agent.md` — service contract
+- `docs/ai/architecture/event-schema-contract.md` — DiagnosisEvent, ActionEvent, IncidentRecord added
+- `docs/ai/architecture/kinesis-topology.md` — r17-diagnosis, r17-actions streams, incidents table, Terraform HCL
+- `docs/ai/architecture/otel-instrumentation.md` — diagnosis-agent + actions-agent spans, attributes, metrics
 
-1. **Diagnosis Agent** — Uses Amazon Bedrock (Claude) to analyze risk context and generate human-readable explanations of what's failing and why
-2. **Actions Agent** — Determines appropriate response actions based on risk state and diagnosis (alert, throttle, shutdown recommendation)
+Two new Lambda services:
+
+1. **Diagnosis Agent** — Kinesis ESM on `r17-risk-events`. Skips nominal risk. Debounce 30s per asset. Calls Bedrock (Claude Sonnet) with structured prompt. Emits `DiagnosisEvent` to `r17-diagnosis`. Zod-validated LLM response.
+2. **Actions Agent** — Kinesis ESM on `r17-diagnosis`. Deterministic action rules (NO LLM). Incident lifecycle in DynamoDB (`streaming-agents-incidents`). Emits `ActionEvent` to `r17-actions`.
 
 ### Phase 4 – Conversation Agent
 **Goal:** Voice-driven AI copilot interface using Amazon Bedrock, Lex, and Polly.
@@ -136,8 +143,8 @@ streaming-agents/
 | Layer | Technology | Notes |
 |-------|-----------|-------|
 | Runtime | NestJS on AWS Lambda | TypeScript, BaseLambdaHandler pattern |
-| Streaming | Amazon Kinesis Data Streams | 3 streams, partition by asset_id |
-| State | Amazon DynamoDB | Asset state, rolling baselines |
+| Streaming | Amazon Kinesis Data Streams | 5 streams, partition by asset_id |
+| State | Amazon DynamoDB | Asset state + incidents tables |
 | Scheduling | Amazon EventBridge | Cron trigger for simulator |
 | AI (Phase 3) | Amazon Bedrock (Claude) | Diagnosis explanations |
 | Voice (Phase 4) | Amazon Lex + Polly | Conversation agent |

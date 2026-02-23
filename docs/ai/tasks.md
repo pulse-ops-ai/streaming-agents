@@ -109,15 +109,15 @@ BaseLambdaHandler and NestJS bootstrap.
 
 # Phase 3 – Diagnosis & Actions Agents
 
-## Task 3.1 – Service Contracts & Architecture Docs
+## Task 3.1 – Service Contracts & Architecture Docs ✅
 **Depends on:** Phase 2 complete
-
-Create service contracts and update architecture docs for Phase 3:
-- `docs/ai/services/diagnosis-agent.md` — service contract
-- `docs/ai/services/actions-agent.md` — service contract
-- `docs/ai/architecture/event-schema-contract.md` — add DiagnosisEvent, ActionEvent types
-- `docs/ai/architecture/kinesis-topology.md` — add r17-diagnosis, r17-actions streams
-- `docs/ai/context.md` — update for Phase 3
+**Status:** Complete. All service contracts and architecture docs created/updated:
+- `docs/ai/services/diagnosis-agent.md` — service contract with Bedrock prompt template, debounce logic, Zod response parsing, skip/DLQ conditions
+- `docs/ai/services/actions-agent.md` — service contract with deterministic action rules matrix (severity × incident state), incident lifecycle (opened/escalated/resolved), DynamoDB incidents table schema with GSI
+- `docs/ai/architecture/event-schema-contract.md` — added DiagnosisEvent (#5), ActionEvent (#6), IncidentRecord (#7), updated partition key table
+- `docs/ai/architecture/kinesis-topology.md` — added r17-diagnosis, r17-actions streams, r17-diagnosis-dlq, incidents DynamoDB table, updated data flow diagram, added Terraform HCL for all Phase 3 resources including Bedrock IAM
+- `docs/ai/architecture/otel-instrumentation.md` — added 10 new spans, 7 new attributes, 8 new metrics for diagnosis-agent and actions-agent
+- `docs/ai/context.md` — updated for Phase 3 progress
 
 ## Task 3.2 – Core Contracts Update
 **Read first:** Updated event-schema-contract.md from 3.1

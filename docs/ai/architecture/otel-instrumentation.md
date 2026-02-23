@@ -59,6 +59,16 @@ Format: `{service}.{operation}[.{sub_operation}]`
 | signal-agent | `signal-agent.compute` | Z-scores + risk formula |
 | signal-agent | `signal-agent.dynamodb.write` | Save asset state |
 | signal-agent | `signal-agent.emit` | Write risk event |
+| diagnosis-agent | `diagnosis-agent.process` | Per-event risk explanation |
+| diagnosis-agent | `diagnosis-agent.debounce-check` | Debounce window check |
+| diagnosis-agent | `diagnosis-agent.bedrock.invoke` | Bedrock API call |
+| diagnosis-agent | `diagnosis-agent.parse` | Response parsing + validation |
+| diagnosis-agent | `diagnosis-agent.emit` | Write diagnosis event |
+| actions-agent | `actions-agent.process` | Per-event action evaluation |
+| actions-agent | `actions-agent.load-incident` | Load incident from DynamoDB |
+| actions-agent | `actions-agent.evaluate` | Apply deterministic action rules |
+| actions-agent | `actions-agent.dynamodb.write` | Save incident record |
+| actions-agent | `actions-agent.emit` | Write action event |
 
 ---
 
@@ -81,6 +91,13 @@ Format: `{service}.{operation}[.{sub_operation}]`
 | `signal.composite_risk` | float | Signal agent |
 | `signal.risk_state` | string | Signal agent |
 | `ingestion.event_id` | string | Ingestion service |
+| `diagnosis.confidence` | string | Diagnosis agent |
+| `diagnosis.severity` | string | Diagnosis agent |
+| `bedrock.model_id` | string | Diagnosis agent |
+| `bedrock.prompt_tokens` | int | Diagnosis agent |
+| `bedrock.completion_tokens` | int | Diagnosis agent |
+| `incident.status` | string | Actions agent |
+| `action.type` | string | Actions agent |
 
 ---
 
@@ -103,6 +120,14 @@ Format: `streaming_agents.{service}.{metric_name}`
 | `streaming_agents.signal_agent.risk_score` | gauge | asset_id, risk_state | signal-agent |
 | `streaming_agents.signal_agent.events_processed` | counter | risk_state | signal-agent |
 | `streaming_agents.signal_agent.dynamodb_latency_ms` | histogram | operation | signal-agent |
+| `streaming_agents.diagnosis_agent.events_processed` | counter | risk_state | diagnosis-agent |
+| `streaming_agents.diagnosis_agent.events_skipped` | counter | reason | diagnosis-agent |
+| `streaming_agents.diagnosis_agent.bedrock_latency_ms` | histogram | — | diagnosis-agent |
+| `streaming_agents.diagnosis_agent.tokens_used` | counter | token_type | diagnosis-agent |
+| `streaming_agents.actions_agent.actions_emitted` | counter | action, severity | actions-agent |
+| `streaming_agents.actions_agent.incidents_created` | counter | severity | actions-agent |
+| `streaming_agents.actions_agent.incidents_escalated` | counter | — | actions-agent |
+| `streaming_agents.actions_agent.dynamodb_latency_ms` | histogram | operation | actions-agent |
 
 ### Cardinality Rules
 
