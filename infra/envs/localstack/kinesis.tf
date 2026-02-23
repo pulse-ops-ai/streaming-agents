@@ -51,3 +51,39 @@ resource "aws_kinesis_stream" "r17_risk_events" {
     Project     = "streaming-agents"
   }
 }
+
+# ── Phase 3 Kinesis Streams ──────────────────────────────────────
+
+resource "aws_kinesis_stream" "r17_diagnosis" {
+  name             = "streaming-agents-r17-diagnosis"
+  shard_count      = 1
+  retention_period = 24
+
+  stream_mode_details {
+    stream_mode = "PROVISIONED"
+  }
+
+  tags = {
+    Name        = "streaming-agents-r17-diagnosis"
+    Environment = "localstack"
+    Stream      = "diagnosis"
+    Project     = "streaming-agents"
+  }
+}
+
+resource "aws_kinesis_stream" "r17_actions" {
+  name             = "streaming-agents-r17-actions"
+  shard_count      = 1
+  retention_period = 24
+
+  stream_mode_details {
+    stream_mode = "PROVISIONED"
+  }
+
+  tags = {
+    Name        = "streaming-agents-r17-actions"
+    Environment = "localstack"
+    Stream      = "actions"
+    Project     = "streaming-agents"
+  }
+}

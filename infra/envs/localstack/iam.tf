@@ -224,3 +224,153 @@ resource "aws_iam_role_policy" "signal_agent" {
     ]
   })
 }
+
+# ── Phase 3: Diagnosis Agent Lambda Role ──────────────────────────
+
+resource "aws_iam_role" "diagnosis_agent" {
+  name               = "streaming-agents-diagnosis-agent-role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+
+  tags = {
+    Name        = "streaming-agents-diagnosis-agent-role"
+    Environment = "localstack"
+    Service     = "diagnosis-agent"
+    Project     = "streaming-agents"
+  }
+}
+
+resource "aws_iam_role_policy" "diagnosis_agent" {
+  name = "streaming-agents-diagnosis-agent-policy"
+  role = aws_iam_role.diagnosis_agent.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kinesis:GetRecords",
+          "kinesis:GetShardIterator",
+          "kinesis:DescribeStream",
+          "kinesis:ListStreams",
+          "kinesis:SubscribeToShard"
+        ]
+        Resource = aws_kinesis_stream.r17_risk_events.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kinesis:PutRecord",
+          "kinesis:PutRecords"
+        ]
+        Resource = aws_kinesis_stream.r17_diagnosis.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem"
+        ]
+        Resource = aws_dynamodb_table.asset_state.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel"
+        ]
+        Resource = "arn:aws:bedrock:*::foundation-model/anthropic.*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage"
+        ]
+        Resource = aws_sqs_queue.r17_diagnosis_dlq.arn
+      }
+    ]
+  })
+}
+
+# ── Phase 3: Actions Agent Lambda Role ────────────────────────────
+
+resource "aws_iam_role" "actions_agent" {
+  name               = "streaming-agents-actions-agent-role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+
+  tags = {
+    Name        = "streaming-agents-actions-agent-role"
+    Environment = "localstack"
+    Service     = "actions-agent"
+    Project     = "streaming-agents"
+  }
+}
+
+resource "aws_iam_role_policy" "actions_agent" {
+  name = "streaming-agents-actions-agent-policy"
+  role = aws_iam_role.actions_agent.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kinesis:GetRecords",
+          "kinesis:GetShardIterator",
+          "kinesis:DescribeStream",
+          "kinesis:ListStreams",
+          "kinesis:SubscribeToShard"
+        ]
+        Resource = aws_kinesis_stream.r17_diagnosis.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kinesis:PutRecord",
+          "kinesis:PutRecords"
+        ]
+        Resource = aws_kinesis_stream.r17_actions.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:Query"
+        ]
+        Resource = [
+          aws_dynamodb_table.incidents.arn,
+          "${aws_dynamodb_table.incidents.arn}/index/*",
+          aws_dynamodb_table.asset_state.arn
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage"
+        ]
+        Resource = aws_sqs_queue.r17_actions_dlq.arn
+      }
+    ]
+  })
+}
