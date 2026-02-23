@@ -36,4 +36,6 @@ export interface AssetState {
   last_trace_id: string
   /** Event ID from the most recent event. */
   last_event_id: string
+  /** ISO 8601 timestamp of the last Bedrock diagnosis call (debounce, set by Diagnosis Agent). */
+  last_diagnosis_at: string | null
 }

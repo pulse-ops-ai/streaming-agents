@@ -21,6 +21,18 @@ export interface LastValues {
   control_loop_freq_hz: number
 }
 
+/** Severity classification for diagnosis and actions. */
+export type Severity = 'info' | 'warning' | 'critical'
+
+/** Confidence level of a diagnosis. */
+export type Confidence = 'low' | 'medium' | 'high'
+
+/** Action types that the Actions Agent can emit. */
+export type ActionType = 'monitor' | 'alert' | 'throttle' | 'shutdown_recommended' | 'resolve'
+
+/** Incident lifecycle states. */
+export type IncidentStatus = 'opened' | 'escalated' | 'resolved'
+
 /** Simulator scenario names (locked). */
 export type ScenarioName =
   | 'healthy'

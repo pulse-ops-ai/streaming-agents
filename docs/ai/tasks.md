@@ -119,14 +119,17 @@ BaseLambdaHandler and NestJS bootstrap.
 - `docs/ai/architecture/otel-instrumentation.md` — added 10 new spans, 7 new attributes, 8 new metrics for diagnosis-agent and actions-agent
 - `docs/ai/context.md` — updated for Phase 3 progress
 
-## Task 3.2 – Core Contracts Update
+## Task 3.2 – Core Contracts Update ✅
 **Read first:** Updated event-schema-contract.md from 3.1
 **Depends on:** Task 3.1
-
-Add new types to `packages/core-contracts/`:
-- `DiagnosisEvent` — Bedrock explanation output (asset_id, risk context, root cause analysis, confidence, recommended actions)
-- `ActionEvent` — recommended action (alert, throttle, shutdown, acknowledge) with severity and target
-- `IncidentRecord` — DynamoDB document for active incidents (opened/escalated/resolved lifecycle)
+**Status:** Complete. Added to `packages/core-contracts/src/`:
+- `diagnosis-event.ts` — DiagnosisEvent + DiagnosisEvidence interfaces (root_cause, evidence[], confidence, recommended_actions, severity, model_id, token counts)
+- `action-event.ts` — ActionEvent interface (action, severity, incident_id, incident_status, reason, diagnosis_event_id)
+- `incident-record.ts` — IncidentRecord interface (incident_id PK, asset_id GSI, status lifecycle, timestamps, root_cause, severity, expires_at TTL)
+- `common.ts` — added Severity, Confidence, ActionType, IncidentStatus shared types
+- `asset-state.ts` — extended AssetState with optional `last_diagnosis_at` for debounce
+- `index.ts` — barrel exports updated with all new types
+- Build clean, Biome clean, signal-agent tests still pass (54/54)
 
 ## Task 3.3 – Infrastructure Update
 **Depends on:** Task 3.1

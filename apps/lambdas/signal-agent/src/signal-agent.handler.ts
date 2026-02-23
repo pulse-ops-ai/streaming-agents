@@ -238,6 +238,7 @@ export class SignalAgentHandler extends BaseLambdaHandler<KinesisStreamEvent, vo
       },
       last_trace_id: traceId,
       last_event_id: eventId,
+      last_diagnosis_at: null,
     }
   }
 }

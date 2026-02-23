@@ -16,3 +16,5 @@ export {
   simulatorControllerConfigSchema,
   type SimulatorControllerConfig,
 } from './schemas/simulator.js'
+export { bedrockConfigSchema, type BedrockConfig } from './schemas/bedrock.js'
+export { incidentsConfigSchema, type IncidentsConfig } from './schemas/incidents.js'
