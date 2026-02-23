@@ -39,6 +39,8 @@ resource "aws_lambda_function" "simulator_controller" {
       AWS_REGION            = "us-east-1"
       WORKER_FUNCTION_NAME  = "streaming-agents-simulator-worker"
       DEFAULT_SCENARIO      = "mixed"
+      SIM_WORKER_COUNT      = "2"
+      SIM_BURST_COUNT       = "10"
       OTEL_SERVICE_NAME     = "simulator-controller"
     }
   }
@@ -85,6 +87,7 @@ resource "aws_lambda_function" "simulator_worker" {
       AWS_REGION           = "us-east-1"
       KINESIS_STREAM_NAME  = aws_kinesis_stream.r17_telemetry.name
       BATCH_SIZE           = "25"
+      SIM_MAX_JITTER_MS    = "2000"
       OTEL_SERVICE_NAME    = "simulator-worker"
     }
   }

@@ -17,6 +17,7 @@ function requireEnv(key: string): string {
       useFactory: (): WorkerConfig => ({
         serviceName: process.env.OTEL_SERVICE_NAME ?? 'simulator-worker',
         kinesisStreamName: requireEnv('KINESIS_STREAM_NAME'),
+        maxJitterMs: Number(process.env.SIM_MAX_JITTER_MS ?? '2000'),
       }),
     },
     {

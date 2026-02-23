@@ -12,6 +12,12 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
       - PERSISTENCE=1
+      # Lambda executor: "local" (fast, in-process) or "docker" (isolated containers)
+      # Use "local" for dev to prevent zombie container accumulation
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR:-local}
+      # Simulator overrides (passed to Lambda env vars)
+      - SIM_WORKER_COUNT=${SIM_WORKER_COUNT:-2}
+      - SIM_BURST_COUNT=${SIM_BURST_COUNT:-10}
     volumes:
       - "${LOCALSTACK_VOLUME_DIR:-./docker/localstack}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"

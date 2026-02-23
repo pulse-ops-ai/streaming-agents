@@ -13,6 +13,8 @@ import { getScenario } from './scenarios/index.js'
 export interface WorkerConfig {
   serviceName: string
   kinesisStreamName: string
+  /** Max jitter delay in ms before burst starts (default: 2000). Set 0 to disable. */
+  maxJitterMs: number
 }
 
 export class SimulatorWorkerHandler extends BaseLambdaHandler<
@@ -39,6 +41,12 @@ export class SimulatorWorkerHandler extends BaseLambdaHandler<
     })
 
     try {
+      // Backpressure jitter: stagger worker starts to mimic real-world traffic
+      if (this.config.maxJitterMs > 0) {
+        const jitter = Math.random() * this.config.maxJitterMs
+        await new Promise((resolve) => setTimeout(resolve, jitter))
+      }
+
       const scenario = getScenario(payload.scenario)
       const prng = createPRNG(payload.seed)
       const noise = (mean: number, std: number) => gaussianNoise(prng, mean, std)

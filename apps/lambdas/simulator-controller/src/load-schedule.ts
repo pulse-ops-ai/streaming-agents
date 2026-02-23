@@ -26,7 +26,14 @@ const DEFAULT_SCHEDULE: Record<number, number> = {
   23: 5,
 }
 
-export function getWorkerCount(hour: number, scheduleJson?: string): number {
+export function getWorkerCount(
+  hour: number,
+  scheduleJson?: string,
+  workerCountOverride?: number
+): number {
+  if (workerCountOverride != null && workerCountOverride > 0) {
+    return workerCountOverride
+  }
   const schedule = scheduleJson
     ? (JSON.parse(scheduleJson) as Record<string, number>)
     : DEFAULT_SCHEDULE

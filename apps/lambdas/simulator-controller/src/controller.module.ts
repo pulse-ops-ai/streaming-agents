@@ -18,6 +18,10 @@ function requireEnv(key: string): string {
         workerFunctionName: requireEnv('WORKER_FUNCTION_NAME'),
         loadScheduleJson: process.env.LOAD_SCHEDULE_JSON,
         defaultScenario: process.env.DEFAULT_SCENARIO ?? 'mixed',
+        burstCount: Number(process.env.SIM_BURST_COUNT ?? '120'),
+        workerCountOverride: process.env.SIM_WORKER_COUNT
+          ? Number(process.env.SIM_WORKER_COUNT)
+          : undefined,
       }),
     },
     {

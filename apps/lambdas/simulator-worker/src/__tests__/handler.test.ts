@@ -24,7 +24,11 @@ function makeProducer() {
 }
 
 const ctx: HandlerContext = { requestId: 'req-1', functionName: 'sim-worker' }
-const config: WorkerConfig = { serviceName: 'simulator-worker', kinesisStreamName: 'r17-telemetry' }
+const config: WorkerConfig = {
+  serviceName: 'simulator-worker',
+  kinesisStreamName: 'r17-telemetry',
+  maxJitterMs: 0,
+}
 
 describe('SimulatorWorkerHandler', () => {
   let handler: SimulatorWorkerHandler

@@ -49,6 +49,20 @@ describe('Load Schedule', () => {
     // Hour 12 not in override, falls back to default
     expect(getWorkerCount(12, override)).toBe(DEFAULT_SCHEDULE[12])
   })
+
+  it('uses workerCountOverride when set', () => {
+    expect(getWorkerCount(8, undefined, 3)).toBe(3)
+  })
+
+  it('ignores workerCountOverride when zero or negative', () => {
+    expect(getWorkerCount(8, undefined, 0)).toBe(50)
+    expect(getWorkerCount(8, undefined, -1)).toBe(50)
+  })
+
+  it('workerCountOverride takes priority over schedule JSON', () => {
+    const override = JSON.stringify({ 8: 99 })
+    expect(getWorkerCount(8, override, 2)).toBe(2)
+  })
 })
 
 describe('Scenario Assigner', () => {
@@ -91,6 +105,7 @@ describe('SimulatorControllerHandler', () => {
     serviceName: 'simulator-controller',
     workerFunctionName: 'simulator-worker',
     defaultScenario: 'mixed',
+    burstCount: 120,
   }
 
   beforeEach(() => {
@@ -171,5 +186,36 @@ describe('SimulatorControllerHandler', () => {
 
     // Should invoke exactly 3 workers regardless of hour
     expect(lambdaClient.send).toHaveBeenCalledTimes(3)
+  })
+
+  it('uses burstCount from config instead of hardcoded 120', async () => {
+    const customConfig: ControllerConfig = { ...config, burstCount: 10, workerCountOverride: 1 }
+    const customHandler = new SimulatorControllerHandler(
+      customConfig,
+      telemetry as never,
+      makeLogger() as never,
+      lambdaClient as never
+    )
+
+    await customHandler.handle({}, ctx)
+
+    const payload = JSON.parse(
+      Buffer.from(lambdaClient.send.mock.calls[0][0].input.Payload).toString()
+    )
+    expect(payload.burst_count).toBe(10)
+  })
+
+  it('uses workerCountOverride from config', async () => {
+    const customConfig: ControllerConfig = { ...config, workerCountOverride: 2 }
+    const customHandler = new SimulatorControllerHandler(
+      customConfig,
+      telemetry as never,
+      makeLogger() as never,
+      lambdaClient as never
+    )
+
+    await customHandler.handle({}, ctx)
+
+    expect(lambdaClient.send).toHaveBeenCalledTimes(2)
   })
 })

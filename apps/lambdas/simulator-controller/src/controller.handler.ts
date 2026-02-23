@@ -15,6 +15,8 @@ export interface ControllerConfig {
   workerFunctionName: string
   loadScheduleJson?: string
   defaultScenario: string
+  burstCount: number
+  workerCountOverride?: number
 }
 
 /** EventBridge scheduled event payload (content irrelevant — only the trigger matters). */
@@ -47,7 +49,11 @@ export class SimulatorControllerHandler extends BaseLambdaHandler<
     const now = new Date()
     const hour = now.getUTCHours()
     const dateStr = now.toISOString().slice(0, 10)
-    const workerCount = getWorkerCount(hour, this.config.loadScheduleJson)
+    const workerCount = getWorkerCount(
+      hour,
+      this.config.loadScheduleJson,
+      this.config.workerCountOverride
+    )
     const scenarios = assignScenarios(
       workerCount,
       this.config.defaultScenario as 'mixed' | 'healthy'
@@ -59,7 +65,7 @@ export class SimulatorControllerHandler extends BaseLambdaHandler<
         asset_id: `R-${i + 1}`,
         scenario: scenarios[i],
         seed: `${dateStr}:R-${i + 1}:${this.invocationCount}`,
-        burst_count: 120,
+        burst_count: this.config.burstCount,
       })
     }
 
