@@ -39,6 +39,16 @@ const LAMBDAS: LambdaConfig[] = [
     dir: path.join(LAMBDAS_DIR, 'signal-agent'),
     entryPoint: 'src/index.ts',
   },
+  {
+    name: 'diagnosis-agent',
+    dir: path.join(LAMBDAS_DIR, 'diagnosis-agent'),
+    entryPoint: 'src/index.ts',
+  },
+  {
+    name: 'actions-agent',
+    dir: path.join(LAMBDAS_DIR, 'actions-agent'),
+    entryPoint: 'src/index.ts',
+  },
 ]
 
 async function bundleLambda(lambda: LambdaConfig): Promise<void> {

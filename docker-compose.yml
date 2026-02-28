@@ -12,9 +12,9 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
       - PERSISTENCE=1
-      # Lambda executor: "local" (fast, in-process) or "docker" (isolated containers)
-      # Use "local" for dev to prevent zombie container accumulation
-      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR:-local}
+      # Lambda executor: "docker-reuse" reuses one container per function (Pro/Ultimate)
+      # Prevents both zombie container buildup and in-process memory accumulation
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR:-docker-reuse}
       # Simulator overrides (passed to Lambda env vars)
       - SIM_WORKER_COUNT=${SIM_WORKER_COUNT:-2}
       - SIM_BURST_COUNT=${SIM_BURST_COUNT:-10}

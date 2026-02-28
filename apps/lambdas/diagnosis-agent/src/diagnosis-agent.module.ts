@@ -8,7 +8,10 @@ import { DLQPublisher, KinesisProducer } from '@streaming-agents/core-kinesis'
 import { LoggerService, TelemetryService } from '@streaming-agents/core-telemetry'
 import { BedrockAdapter } from './adapters/bedrock.adapter.js'
 import { AssetStateRepository } from './adapters/dynamodb.adapter.js'
+import { MockBedrockAdapter } from './adapters/mock-bedrock.adapter.js'
 import { type DiagnosisAgentConfig, DiagnosisAgentHandler } from './diagnosis-agent.handler.js'
+
+const isLocal = process.env.NODE_ENV === 'local'
 
 function requireEnv(key: string): string {
   const value = process.env[key]
@@ -57,6 +60,9 @@ function requireEnv(key: string): string {
     {
       provide: BedrockAdapter,
       useFactory: () => {
+        if (isLocal) {
+          return new MockBedrockAdapter()
+        }
         const region = process.env.BEDROCK_REGION ?? process.env.AWS_REGION
         return new BedrockAdapter(new BedrockRuntimeClient({ region }), {
           modelId: process.env.BEDROCK_MODEL_ID ?? 'anthropic.claude-sonnet-4-20250514',
