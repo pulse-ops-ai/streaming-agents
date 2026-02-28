@@ -11,7 +11,7 @@ import { AssetStateRepository } from './adapters/dynamodb.adapter.js'
 import { MockBedrockAdapter } from './adapters/mock-bedrock.adapter.js'
 import { type DiagnosisAgentConfig, DiagnosisAgentHandler } from './diagnosis-agent.handler.js'
 
-const isLocal = process.env.NODE_ENV === 'local'
+const isLocal = process.env.NODE_ENV === 'local' || process.env.NODE_ENV === 'localstack'
 
 function requireEnv(key: string): string {
   const value = process.env[key]

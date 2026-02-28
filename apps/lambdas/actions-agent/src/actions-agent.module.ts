@@ -39,7 +39,7 @@ function requireEnv(key: string): string {
         const client = DynamoDBDocumentClient.from(
           new DynamoDBClient({ region: process.env.AWS_REGION })
         )
-        return new IncidentAdapter(client, requireEnv('INCIDENTS_TABLE'))
+        return new IncidentAdapter(client, requireEnv('DYNAMODB_INCIDENTS_TABLE'))
       },
     },
     {

@@ -15,6 +15,13 @@ services:
       # Lambda executor: "docker-reuse" reuses one container per function (Pro/Ultimate)
       # Prevents both zombie container buildup and in-process memory accumulation
       - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR:-docker-reuse}
+
+      - KINESIS_MOCK_PROVIDER_ENGINE=scala
+      - KINESIS_MOCK_MAXIMUM_HEAP_SIZE=1024m
+      - KINESIS_MOCK_INITIAL_HEAP_SIZE=512m
+      - KINESIS_LATENCY=0
+      - KINESIS_MOCK_PERSIST_INTERVAL=300 seconds
+      - LS_LOG=trace-internal
       # Simulator overrides (passed to Lambda env vars)
       - SIM_WORKER_COUNT=${SIM_WORKER_COUNT:-2}
       - SIM_BURST_COUNT=${SIM_BURST_COUNT:-10}

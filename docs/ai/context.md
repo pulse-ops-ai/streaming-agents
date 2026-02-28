@@ -111,7 +111,7 @@ This file overrides chat history.
 - All Phase 3 Terraform resources defined (2 streams, 1 table, 2 DLQs, 2 Lambdas + IAM + ESM)
 
 **Task 3.6 — E2E Phase 3 Validation** 🔄 IN PROGRESS
-- MockBedrockAdapter created and wired (conditional on `NODE_ENV=local`)
+- MockBedrockAdapter created and wired (conditional on `NODE_ENV=local` or `localstack`)
 - `docker-compose.yml` updated: `LAMBDA_EXECUTOR=docker-reuse` for stable container reuse
 - Pending: deploy to LocalStack, run nominal/degradation/resolution/DLQ validation
 
