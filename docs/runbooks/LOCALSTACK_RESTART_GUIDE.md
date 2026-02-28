@@ -1,101 +1,107 @@
 # LocalStack Restart Guide
 
-## Problem Summary
-LocalStack exhausted with 100+ zombie Lambda containers due to:
-- `LAMBDA_EXECUTOR=docker` mode (creates container per invocation)
-- EventBridge cron triggering controller every minute
-- Controller spawning 5-50 workers per invocation
-- Each worker generating 120 events
+## Architecture Overview
 
-**Result:** Thread pool exhaustion, Kinesis down, Lambda invocations failing.
+The streaming-agents pipeline runs 6 Lambda functions on LocalStack Pro with `docker-reuse` executor mode. EventBridge triggers the simulator controller every minute, which fans out to workers that feed the full pipeline.
 
-## Changes Made
+**Per-minute pipeline:**
+| Step | Lambda | Output |
+|------|--------|--------|
+| EventBridge cron | simulator-controller | Fans out 2 workers |
+| Workers (2x) | simulator-worker | 2 x 10 = 20 telemetry records |
+| Kinesis ESM | ingestion | 20 ingested records |
+| Kinesis ESM | signal-agent | 20 risk events + DynamoDB state |
+| Kinesis ESM | diagnosis-agent | DiagnosisEvents (debounced, MockBedrock locally) |
+| Kinesis ESM | actions-agent | ActionEvents + incident lifecycle |
 
-### 1. `.env.example` Updated
-Added recommended LocalStack settings:
-```bash
-# Lambda Executor - use "local" for dev to prevent zombie containers
-LAMBDA_EXECUTOR=local
+## Lambda Executor Modes
 
-# Simulator Overrides - reduce load for local testing
-SIM_WORKER_COUNT=2      # Instead of 5-50 per hour
-SIM_BURST_COUNT=10      # Instead of 120 events
-```
+| Mode | Behavior | Use Case |
+|------|----------|----------|
+| `docker-reuse` | One container per function, reused across invocations | **Default — use this** |
+| `docker` | New container per invocation, zombie buildup risk | Never use for dev |
+| `local` | In-process, no containers, memory accumulates in LocalStack | Fallback if docker-reuse issues |
 
-### 2. `docker-compose.yml` Updated
-- Changed default `LAMBDA_EXECUTOR` from `docker` to `local`
-- Added `SIM_WORKER_COUNT` and `SIM_BURST_COUNT` environment variables
-- Added comments explaining the settings
-
-### 3. Lambda Terraform Already Configured
-- Controller Lambda already has `SIM_WORKER_COUNT=2` and `SIM_BURST_COUNT=10`
-- Worker Lambda already has `SIM_MAX_JITTER_MS=2000` for backpressure
-- No Terraform changes needed
+**Current default:** `LAMBDA_EXECUTOR=docker-reuse` (set in `docker-compose.yml`)
 
 ## Restart Steps
 
-### 1. Clean Up Zombie Containers
+### 1. Tear Down
 ```bash
-# Stop all zombie Lambda containers
+# From repo root
+make infra-down
+
+# Or manually:
+cd infra/envs/localstack && tflocal destroy -auto-approve
+cd /path/to/repo && docker compose down -v
+```
+
+### 2. Clean Up Stale Containers (if any)
+```bash
+# Stop any leftover Lambda containers from docker-reuse mode
 docker ps -q --filter "name=localstack-lambda" | xargs -r docker stop
 docker ps -aq --filter "name=localstack-lambda" | xargs -r docker rm
 
-# Verify cleanup
+# Verify
 docker ps -a | grep lambda
 ```
 
-### 2. Update Your `.env` File
-Copy the new settings from `.env.example`:
+### 3. Start Fresh
 ```bash
-# Add these lines to your .env
-LAMBDA_EXECUTOR=local
-SIM_WORKER_COUNT=2
-SIM_BURST_COUNT=10
-```
-
-### 3. Restart LocalStack
-```bash
-# Full teardown and restart
-make infra-down
-make infra-up
-
-# Or manually:
-docker compose down -v
+# Start LocalStack
 docker compose up -d
-cd infra/envs/localstack && tflocal apply -auto-approve
+
+# Wait for healthy
+sleep 10
+
+# Build, bundle, and deploy
+pnpm build
+npx tsx tools/bundle-lambda.ts
+cd infra/envs/localstack && tflocal init && tflocal apply -auto-approve
 ```
 
-### 4. Verify EventBridge is Disabled
+### 4. Verify Deployment
 ```bash
+# Check all 6 Lambda functions exist
+awslocal lambda list-functions --query 'Functions[].FunctionName' --output table
+
+# Expected:
+# streaming-agents-simulator-controller
+# streaming-agents-simulator-worker
+# streaming-agents-ingestion
+# streaming-agents-signal-agent
+# streaming-agents-diagnosis-agent
+# streaming-agents-actions-agent
+
+# Check EventBridge rule
 awslocal events describe-rule --name streaming-agents-simulator-cron --query 'State'
-# Should show: "DISABLED"
+# "ENABLED" — simulator runs continuously
 
-# If not disabled:
-awslocal events disable-rule --name streaming-agents-simulator-cron
+# Check Kinesis streams
+awslocal kinesis list-streams --query 'StreamNames'
+# 5 streams: r17-telemetry, r17-ingested, r17-risk-events, r17-diagnosis, r17-actions
+
+# Check DynamoDB tables
+awslocal dynamodb list-tables --query 'TableNames'
+# 2 tables: streaming-agents-asset-state, streaming-agents-incidents
+
+# Check SQS DLQs
+awslocal sqs list-queues --query 'QueueUrls'
+# 4 DLQs: r17-telemetry-dlq, r17-ingested-dlq, r17-diagnosis-dlq, r17-actions-dlq
 ```
 
-### 5. Redeploy Lambda Code
+### 5. Redeploy Lambda Code (Without Full Restart)
+If you only need to push new code without tearing down infrastructure:
 ```bash
-# Rebuild and bundle
 pnpm build
 npx tsx tools/bundle-lambda.ts
 
-# Deploy all functions
-awslocal lambda update-function-code \
-  --function-name streaming-agents-simulator-worker \
-  --zip-file fileb://dist/lambdas/simulator-worker.zip
-
-awslocal lambda update-function-code \
-  --function-name streaming-agents-simulator-controller \
-  --zip-file fileb://dist/lambdas/simulator-controller.zip
-
-awslocal lambda update-function-code \
-  --function-name streaming-agents-ingestion \
-  --zip-file fileb://dist/lambdas/ingestion.zip
-
-awslocal lambda update-function-code \
-  --function-name streaming-agents-signal-agent \
-  --zip-file fileb://dist/lambdas/signal-agent.zip
+# Deploy all 6 functions
+for fn in simulator-controller simulator-worker ingestion signal-agent diagnosis-agent actions-agent; do
+  awslocal lambda update-function-code \
+    --function-name "streaming-agents-${fn}" \
+    --zip-file "fileb://dist/lambdas/${fn}.zip"
+done
 ```
 
 ## Testing After Restart
@@ -105,7 +111,7 @@ awslocal lambda update-function-code \
 awslocal lambda invoke \
   --function-name streaming-agents-simulator-worker \
   --cli-binary-format raw-in-base64-out \
-  --payload file://test-payload.json \
+  --payload '{"asset_id":"R-17","scenario":"degradation","seed":"test:R-17:1","burst_count":10}' \
   /tmp/worker-response.json
 
 cat /tmp/worker-response.json
@@ -129,78 +135,66 @@ awslocal kinesis get-records \
 # Wait for ESM processing
 sleep 10
 
-# Check ingested stream
-SHARD_ITERATOR=$(awslocal kinesis get-shard-iterator \
-  --stream-name streaming-agents-r17-ingested \
-  --shard-id shardId-000000000000 \
-  --shard-iterator-type TRIM_HORIZON \
-  --query 'ShardIterator' --output text)
-
-awslocal kinesis get-records \
-  --shard-iterator "$SHARD_ITERATOR" \
-  --limit 1 --query 'Records[0].Data' --output text | base64 -d | jq
-
-# Check DynamoDB
-awslocal dynamodb get-item \
+# Check DynamoDB asset state
+awslocal dynamodb scan \
   --table-name streaming-agents-asset-state \
-  --key '{"asset_id": {"S": "R-17"}}' \
-  --output json | jq '{reading_count, composite_risk, risk_state}'
+  --query 'Items[0].{asset_id:asset_id.S,risk_state:risk_state.S,reading_count:reading_count.N}' \
+  --output table
+
+# Check incidents table
+awslocal dynamodb scan \
+  --table-name streaming-agents-incidents \
+  --query 'Count'
 ```
 
-## Important Notes
+## Environment Variables
 
-### DO NOT Use Controller in LocalStack
-The controller is designed for production with 5-50 workers. Even with overrides, it's safer to test workers directly:
+### docker-compose.yml
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `LAMBDA_EXECUTOR` | `docker-reuse` | Container reuse mode (Pro/Ultimate) |
+| `SIM_WORKER_COUNT` | `2` | Number of simulator workers per cycle |
+| `SIM_BURST_COUNT` | `10` | Telemetry events per worker per cycle |
+| `LOCALSTACK_AUTH_TOKEN` | (required) | Pro license key |
 
-```bash
-# Good: Direct worker invocation
-awslocal lambda invoke --function-name streaming-agents-simulator-worker ...
-
-# Avoid: Controller invocation (spawns multiple workers)
-# awslocal lambda invoke --function-name streaming-agents-simulator-controller ...
-```
-
-### EventBridge Cron Must Stay Disabled
-The cron triggers every minute. With `SIM_WORKER_COUNT=2` and `SIM_BURST_COUNT=10`, that's still 20 events/minute, which is fine. But if you accidentally enable it with default settings, you'll recreate the zombie container problem.
-
-### Local vs Docker Mode
-
-| Mode | Pros | Cons | Use Case |
-|------|------|------|----------|
-| `local` | Fast, no containers, low resources | Less isolation | Development, testing |
-| `docker` | Production-like isolation | Slow, high resources, zombie risk | CI, final validation |
-
-**Recommendation:** Use `local` for all development. Only switch to `docker` for final pre-deployment validation.
-
-## Expected Behavior After Restart
-
-✅ LocalStack healthy
-✅ No zombie containers
-✅ Lambda invocations succeed (StatusCode 200)
-✅ Events flow through Kinesis streams
-✅ DynamoDB updates with asset state
-✅ Risk events emitted
+### Diagnosis Agent (NODE_ENV)
+The diagnosis-agent uses `MockBedrockAdapter` when `NODE_ENV=local`. The Terraform currently sets `NODE_ENV=localstack` — update to `local` if you want mock Bedrock responses instead of real Bedrock calls.
 
 ## Troubleshooting
 
-### "Connection refused" on Kinesis
-LocalStack's Kinesis service crashed. Restart LocalStack:
+### "Connection refused" on Kinesis/DynamoDB
+LocalStack internal service crashed. Restart the container:
 ```bash
-docker restart streaming-agents-localstack
+docker compose restart localstack
 ```
+If persistent, do a full teardown and restart (see steps above).
 
 ### ESM Not Processing
-LocalStack ESM polling is inconsistent. This is a known limitation. The Lambda code is correct - it will work in real AWS.
+LocalStack ESM polling can be inconsistent. Check Lambda logs:
+```bash
+awslocal logs describe-log-groups --query 'logGroups[].logGroupName'
+awslocal logs get-log-events \
+  --log-group-name /aws/lambda/streaming-agents-ingestion \
+  --log-stream-name $(awslocal logs describe-log-streams \
+    --log-group-name /aws/lambda/streaming-agents-ingestion \
+    --query 'logStreams[-1].logStreamName' --output text)
+```
 
-### Still Getting Zombie Containers
-1. Verify `.env` has `LAMBDA_EXECUTOR=local`
-2. Restart Docker Compose: `docker compose down && docker compose up -d`
-3. Check environment: `docker exec streaming-agents-localstack env | grep LAMBDA_EXECUTOR`
+### Terraform State Corruption
+If `tflocal apply` hangs or errors on state refresh after a crash:
+```bash
+cd infra/envs/localstack
+rm -f terraform.tfstate terraform.tfstate.backup
+rm -f localstack_providers_override.tf
+tflocal init -reconfigure
+tflocal apply -auto-approve
+```
 
-## Next Steps
+### docker-reuse Containers Not Cleaning Up
+```bash
+# List Lambda containers
+docker ps -a --filter "name=localstack-lambda" --format '{{.Names}} {{.Status}}'
 
-Once LocalStack is stable:
-1. Continue testing with direct worker invocations
-2. Test different scenarios (healthy, degradation, etc.)
-3. Validate full pipeline with small event counts
-4. When ready for AWS deployment, switch to `docker` mode for final validation
+# Force cleanup
+docker ps -aq --filter "name=localstack-lambda" | xargs -r docker rm -f
+```

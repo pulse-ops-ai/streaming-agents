@@ -46,28 +46,30 @@ This file overrides chat history.
 ### Phase 2 – Streaming Telemetry Pipeline (COMPLETE)
 
 **Shared Packages (5):**
-- `@streaming-agents/core-contracts` — IngestedEvent, RiskEvent, DLQMessage, SimulatorWorkerPayload, AssetState
-- `@streaming-agents/core-config` — Zod-validated env loading, Secrets Manager resolution (NODE_ENV-aware)
+- `@streaming-agents/core-contracts` — IngestedEvent, RiskEvent, DiagnosisEvent, ActionEvent, IncidentRecord, DLQMessage, SimulatorWorkerPayload, AssetState
+- `@streaming-agents/core-config` — Zod-validated env loading (bedrockConfigSchema, incidentsConfigSchema), Secrets Manager resolution
 - `@streaming-agents/core-telemetry` — OTel SDK init, TelemetryService, LoggerService, NestJS module
 - `@streaming-agents/core-kinesis` — KinesisProducer (batching, partial retry), KinesisConsumer, DLQPublisher
 - `@streaming-agents/lambda-base` — BaseLambdaHandler<TIn,TOut>, bootstrapLambda(), KinesisLambdaAdapter
 
-**Lambda Services (4):**
+**Lambda Services (6):**
 - `simulator-controller` — EventBridge cron → fan-out N workers per load schedule
 - `simulator-worker` — 5 deterministic scenarios (seedrandom PRNG), publishes to r17-telemetry
 - `ingestion` — Schema validation, OTel root span, metadata enrichment, fan-out to r17-ingested, DLQ routing
 - `signal-agent` — EMA baselines, z-scores, composite risk (LOCKED formula), DynamoDB state, RiskEvent emission
+- `diagnosis-agent` — Bedrock-powered root cause analysis, debounce, DiagnosisEvent emission (Phase 3)
+- `actions-agent` — Deterministic action rules, incident lifecycle, ActionEvent emission (Phase 3)
 
-**Infrastructure (23 Terraform resources):**
-- 3 Kinesis streams (r17-telemetry, r17-ingested, r17-risk-events)
-- 2 SQS DLQ queues
-- 1 DynamoDB table (asset-state)
+**Infrastructure (35 Terraform resources):**
+- 5 Kinesis streams (r17-telemetry, r17-ingested, r17-risk-events, r17-diagnosis, r17-actions)
+- 4 SQS DLQ queues
+- 2 DynamoDB tables (asset-state, incidents with GSI)
 - 1 EventBridge rule (simulator-cron)
-- 4 Lambda functions + IAM roles + ESM mappings
-- Lambda bundler: `tools/bundle-lambda.ts` (esbuild)
+- 6 Lambda functions + IAM roles + ESM mappings
+- Lambda bundler: `tools/bundle-lambda.ts` (esbuild, 6 functions)
 
-**Test Coverage:** 105 unit tests passing
-**E2E Validated:** Full pipeline on LocalStack — simulator → ingestion → signal-agent → DynamoDB + risk events
+**Test Coverage:** 288 unit tests passing (across 13 packages)
+**E2E Validated:** Phase 2 pipeline on LocalStack — simulator → ingestion → signal-agent → DynamoDB + risk events
 
 ---
 
@@ -82,6 +84,36 @@ This file overrides chat history.
 - `docs/ai/architecture/event-schema-contract.md` — DiagnosisEvent, ActionEvent, IncidentRecord added
 - `docs/ai/architecture/kinesis-topology.md` — r17-diagnosis, r17-actions streams, incidents table, Terraform HCL
 - `docs/ai/architecture/otel-instrumentation.md` — diagnosis-agent + actions-agent spans, attributes, metrics
+
+**Task 3.2 — Core Contracts & Config Schemas** ✅
+- `packages/core-config/src/schemas/bedrock.ts` — Bedrock config (model ID, max tokens, temperature, region, debounce)
+- `packages/core-config/src/schemas/incidents.ts` — Incidents config (table name, escalation threshold, resolved TTL)
+- `packages/core-contracts/src/__tests__/contracts.test.ts` — 9 contract type tests
+- `packages/core-config/src/__tests__/schemas.test.ts` — 17 schema validation tests
+
+**Task 3.3 — Diagnosis Agent Lambda** ✅
+- `apps/lambdas/diagnosis-agent/` — Full Lambda service (42 tests)
+- Pure functions: `buildDiagnosisPrompt`, `parseDiagnosisResponse` (Zod-validated LLM output)
+- `BedrockAdapter` — injectable adapter wrapping `InvokeModelCommand` (Anthropic Messages API)
+- `MockBedrockAdapter` — deterministic responses for local dev (`NODE_ENV=local`)
+- `AssetStateRepository` — debounce check via `last_diagnosis_at` in DynamoDB
+- Handler pipeline: skip nominal → debounce → prompt → Bedrock → parse → emit DiagnosisEvent
+
+**Task 3.4 — Actions Agent Lambda** ✅
+- `apps/lambdas/actions-agent/` — Full Lambda service (43 tests)
+- `evaluateActionRules` — 7 deterministic rules (severity × incident state matrix, NO LLM)
+- `buildIncidentRecord` — create/update/resolve with severity upgrade (never downgrade)
+- `IncidentAdapter` — DynamoDB with GSI (`asset_id-status-index`) for active incident lookup
+- Handler pipeline: load incident → evaluate rules → write incident → emit ActionEvent
+
+**Task 3.5 — Terraform & Bundling** ✅
+- `tools/bundle-lambda.ts` — updated to include diagnosis-agent and actions-agent (6 total)
+- All Phase 3 Terraform resources defined (2 streams, 1 table, 2 DLQs, 2 Lambdas + IAM + ESM)
+
+**Task 3.6 — E2E Phase 3 Validation** 🔄 IN PROGRESS
+- MockBedrockAdapter created and wired (conditional on `NODE_ENV=local`)
+- `docker-compose.yml` updated: `LAMBDA_EXECUTOR=docker-reuse` for stable container reuse
+- Pending: deploy to LocalStack, run nominal/degradation/resolution/DLQ validation
 
 Two new Lambda services:
 
@@ -115,8 +147,8 @@ streaming-agents/
 │       ├── simulator-worker/      # ✅ Generate v2 events → Kinesis
 │       ├── ingestion/             # ✅ Kinesis trigger → validate → fan-out
 │       ├── signal-agent/          # ✅ Risk scoring → DynamoDB
-│       ├── diagnosis-agent/       # ⬜ Phase 3
-│       └── actions-agent/         # ⬜ Phase 3
+│       ├── diagnosis-agent/       # ✅ Bedrock diagnosis + MockBedrockAdapter
+│       └── actions-agent/         # ✅ Deterministic rules + incident lifecycle
 ├── python/
 │   ├── packages/
 │   │   └── streaming_agents_core/ # ✅ Pydantic models
@@ -144,13 +176,13 @@ streaming-agents/
 |-------|-----------|-------|
 | Runtime | NestJS on AWS Lambda | TypeScript, BaseLambdaHandler pattern |
 | Streaming | Amazon Kinesis Data Streams | 5 streams, partition by asset_id |
-| State | Amazon DynamoDB | Asset state + incidents tables |
+| State | Amazon DynamoDB | Asset state + incidents (GSI) tables |
 | Scheduling | Amazon EventBridge | Cron trigger for simulator |
 | AI (Phase 3) | Amazon Bedrock (Claude) | Diagnosis explanations |
 | Voice (Phase 4) | Amazon Lex + Polly | Conversation agent |
 | Observability | OpenTelemetry → Managed Prometheus + Grafana | Trace propagation validated |
 | Edge | Python on Raspberry Pi 5 | Reachy Mini daemon + IMU SDK |
-| IaC | Terraform + LocalStack | 23 resources, esbuild bundling |
+| IaC | Terraform + LocalStack | 35 resources, esbuild bundling, docker-reuse executor |
 
 ## Telemetry v2 Schema (LOCKED — DO NOT MODIFY)
 
