@@ -194,6 +194,50 @@ interface IncidentRecord {
 }
 ```
 
+### 8. LexFulfillmentRequest
+
+**Trigger:** Amazon Lex V2 Fulfillment (synchronous)
+**Consumer:** Conversation Agent (Phase 4)
+**Schema:** `packages/core-contracts/src/lex.ts` (Planned)
+
+```typescript
+interface LexFulfillmentRequest {
+  sessionState: {
+    intent: {
+      name: string;
+      slots: Record<string, { value: { interpretedValue: string } }>;
+      state: string;
+    };
+    sessionAttributes: Record<string, string>;
+  };
+  inputTranscript: string;
+}
+```
+
+### 9. LexFulfillmentResponse
+
+**Return:** Synchronous response to Amazon Lex V2
+**Producer:** Conversation Agent (Phase 4)
+**Schema:** `packages/core-contracts/src/lex.ts` (Planned)
+
+```typescript
+interface LexFulfillmentResponse {
+  sessionState: {
+    dialogAction: {
+      type: 'Close';
+    };
+    intent: {
+      name: string;
+      state: 'Fulfilled' | 'Failed';
+    };
+  };
+  messages: Array<{
+    contentType: 'PlainText' | 'SSML';
+    content: string;
+  }>;
+}
+```
+
 ---
 
 ## Partition Key Strategy

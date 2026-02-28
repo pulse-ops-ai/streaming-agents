@@ -26,7 +26,7 @@ This file overrides chat history.
 
 ## Current Phase
 
-**Phase 3 – Diagnosis & Actions Agents**
+**Phase 4 – Conversation Agent**
 
 ---
 
@@ -73,55 +73,39 @@ This file overrides chat history.
 
 ---
 
-## Active Phase
-
-### Phase 3 – Diagnosis & Actions Agents
+### Phase 3 – Diagnosis & Actions Agents (COMPLETE)
 **Goal:** When risk is elevated/critical, explain WHY and recommend WHAT to do.
 
-**Task 3.1 — Service Contracts & Architecture Docs** ✅
-- `docs/ai/services/diagnosis-agent.md` — service contract
-- `docs/ai/services/actions-agent.md` — service contract
-- `docs/ai/architecture/event-schema-contract.md` — DiagnosisEvent, ActionEvent, IncidentRecord added
-- `docs/ai/architecture/kinesis-topology.md` — r17-diagnosis, r17-actions streams, incidents table, Terraform HCL
-- `docs/ai/architecture/otel-instrumentation.md` — diagnosis-agent + actions-agent spans, attributes, metrics
+- Two new Lambda services created: Diagnosis Agent (Bedrock LLM) and Actions Agent (Deterministic Rules)
+- Infrastructure deployed: 2 Kinesis streams, 1 DynamoDB table, SQS DLQs, ES Mappings
+- Integration tested locally with MockBedrockAdapter
+- Service contracts and schemas locked
 
-**Task 3.2 — Core Contracts & Config Schemas** ✅
-- `packages/core-config/src/schemas/bedrock.ts` — Bedrock config (model ID, max tokens, temperature, region, debounce)
-- `packages/core-config/src/schemas/incidents.ts` — Incidents config (table name, escalation threshold, resolved TTL)
-- `packages/core-contracts/src/__tests__/contracts.test.ts` — 9 contract type tests
-- `packages/core-config/src/__tests__/schemas.test.ts` — 17 schema validation tests
+---
 
-**Task 3.3 — Diagnosis Agent Lambda** ✅
-- `apps/lambdas/diagnosis-agent/` — Full Lambda service (42 tests)
-- Pure functions: `buildDiagnosisPrompt`, `parseDiagnosisResponse` (Zod-validated LLM output)
-- `BedrockAdapter` — injectable adapter wrapping `InvokeModelCommand` (Anthropic Messages API)
-- `MockBedrockAdapter` — deterministic responses for local dev (`NODE_ENV=local`)
-- `AssetStateRepository` — debounce check via `last_diagnosis_at` in DynamoDB
-- Handler pipeline: skip nominal → debounce → prompt → Bedrock → parse → emit DiagnosisEvent
-
-**Task 3.4 — Actions Agent Lambda** ✅
-- `apps/lambdas/actions-agent/` — Full Lambda service (43 tests)
-- `evaluateActionRules` — 7 deterministic rules (severity × incident state matrix, NO LLM)
-- `buildIncidentRecord` — create/update/resolve with severity upgrade (never downgrade)
-- `IncidentAdapter` — DynamoDB with GSI (`asset_id-status-index`) for active incident lookup
-- Handler pipeline: load incident → evaluate rules → write incident → emit ActionEvent
-
-**Task 3.5 — Terraform & Bundling** ✅
-- `tools/bundle-lambda.ts` — updated to include diagnosis-agent and actions-agent (6 total)
-- All Phase 3 Terraform resources defined (2 streams, 1 table, 2 DLQs, 2 Lambdas + IAM + ESM)
-
-**Task 3.6 — E2E Phase 3 Validation** 🔄 IN PROGRESS
-- MockBedrockAdapter created and wired (conditional on `NODE_ENV=local` or `localstack`)
-- `docker-compose.yml` updated: `LAMBDA_EXECUTOR=docker-reuse` for stable container reuse
-- Pending: deploy to LocalStack, run nominal/degradation/resolution/DLQ validation
-
-Two new Lambda services:
-
-1. **Diagnosis Agent** — Kinesis ESM on `r17-risk-events`. Skips nominal risk. Debounce 30s per asset. Calls Bedrock (Claude Sonnet) with structured prompt. Emits `DiagnosisEvent` to `r17-diagnosis`. Zod-validated LLM response.
-2. **Actions Agent** — Kinesis ESM on `r17-diagnosis`. Deterministic action rules (NO LLM). Incident lifecycle in DynamoDB (`streaming-agents-incidents`). Emits `ActionEvent` to `r17-actions`.
+## Active Phase
 
 ### Phase 4 – Conversation Agent
 **Goal:** Voice-driven AI copilot interface using Amazon Bedrock, Lex, and Polly.
+
+**Task 4.1 — Service Contract & Architecture** ✅
+- `docs/ai/services/conversation-agent.md` — Lex fulfillment contract
+- `docs/ai/architecture/lex-voice-pipeline.md` — Voice pipeline architecture
+- `docs/ai/architecture/event-schema-contract.md` — Lex payload types added
+
+**Task 4.2 — Core Contracts & Infrastructure** 🔄 PENDING
+- Define Lex V2 Request/Response in `packages/core-contracts/src/lex.ts`
+- Add Lex bot, slot types, and fulfillment Lambda to Terraform
+
+**Task 4.3 — Conversation Agent Lambda** 🔄 PENDING
+- Extends standard Lambda handler (not Kinesis)
+- DynamoDB reads for context building
+- Bedrock invocation with SSML hints
+- `apps/lambdas/conversation-agent/`
+
+**Task 4.4 — Voice Pipeline Demo** 🔄 PENDING
+- Amazon Lex text/voice interaction testing
+- Polly integration for SSML speech output
 
 ### Phase 5 – Demo, Article, Deployment
 **Goal:** Demo video, architecture screenshots, article finalization, deploy to real AWS.

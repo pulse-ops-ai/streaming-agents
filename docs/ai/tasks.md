@@ -107,7 +107,7 @@ BaseLambdaHandler and NestJS bootstrap.
 
 ---
 
-# Phase 3 – Diagnosis & Actions Agents
+# Phase 3 – Diagnosis & Actions Agents ✅
 
 ## Task 3.1 – Service Contracts & Architecture Docs ✅
 **Depends on:** Phase 2 complete
@@ -131,102 +131,31 @@ BaseLambdaHandler and NestJS bootstrap.
 - `index.ts` — barrel exports updated with all new types
 - Build clean, Biome clean, signal-agent tests still pass (54/54)
 
-## Task 3.3 – Infrastructure Update
+## Task 3.3 – Infrastructure Update ✅
 **Depends on:** Task 3.1
+**Status:** Complete. LocalStack module provisioned for Kinesis diagnosis and actions streams, with DynamoDB incidents table configured.
 
-Add Terraform resources:
-- Kinesis stream: `r17-diagnosis` (1 shard)
-- Kinesis stream: `r17-actions` (1 shard)
-- SQS DLQ: `r17-diagnosis-dlq`
-- DynamoDB table: `streaming-agents-incidents` (hash: incident_id, GSI: asset_id + status)
-- Lambda functions: `diagnosis-agent`, `actions-agent`
-- IAM roles with Bedrock invoke permission for diagnosis-agent
-- Kinesis ESM: diagnosis-agent ← r17-risk-events, actions-agent ← r17-diagnosis
-
-## Task 3.4 – Diagnosis Agent Lambda
+## Task 3.4 – Diagnosis Agent Lambda ✅
 **Read first:** `docs/ai/services/diagnosis-agent.md`
 **Depends on:** Task 3.2, Task 3.3
+**Status:** Complete. Lambda implemented and bundled.
 
-```
-apps/lambdas/diagnosis-agent/
-```
-
-Extends `BaseLambdaHandler<KinesisStreamEvent, void>`.
-
-Consumes `RiskEvent` from `r17-risk-events`. When risk is `elevated` or `critical`:
-1. Load asset state from DynamoDB (baselines, history, last values)
-2. Build a structured prompt with risk context:
-   - Current z-scores and which signals are contributing
-   - Signal trends (last N values from baselines)
-   - Scenario context (what the robot is, what the signals mean)
-   - Threshold breach details
-3. Call Amazon Bedrock (Claude Sonnet) via `@aws-sdk/client-bedrock-runtime`
-4. Parse response into structured `DiagnosisEvent`:
-   - `root_cause`: concise explanation of likely failure mode
-   - `evidence`: array of signal-specific observations
-   - `confidence`: low/medium/high
-   - `recommended_actions`: array of suggested actions
-   - `severity`: info/warning/critical
-5. Emit `DiagnosisEvent` to `r17-diagnosis` stream
-
-When risk is `nominal`, skip (no Bedrock call — save cost).
-
-Key constraints:
-- Bedrock prompt is templated, not freeform — LLM receives structured data, returns structured response
-- LLM NEVER computes risk scores — it explains scores computed by signal-agent
-- Bedrock response parsed with Zod for safety (malformed LLM output → DLQ)
-- Rate limiting: max 1 Bedrock call per asset per 30 seconds (debounce in DynamoDB)
-
-## Task 3.5 – Actions Agent Lambda
+## Task 3.5 – Actions Agent Lambda ✅
 **Read first:** `docs/ai/services/actions-agent.md`
 **Depends on:** Task 3.4
+**Status:** Complete. Lambda implemented and bundled.
 
-```
-apps/lambdas/actions-agent/
-```
-
-Extends `BaseLambdaHandler<KinesisStreamEvent, void>`.
-
-Consumes `DiagnosisEvent` from `r17-diagnosis`. Determines appropriate response:
-1. Load or create incident record from DynamoDB (`streaming-agents-incidents`)
-2. Apply action rules (deterministic, NOT LLM):
-   - `severity: info` + no open incident → log only
-   - `severity: warning` + no open incident → create incident, emit alert action
-   - `severity: warning` + existing incident → escalate if sustained > 60s
-   - `severity: critical` → create/escalate incident, emit shutdown recommendation
-3. Emit `ActionEvent` to `r17-actions` stream
-4. Update incident record (status, timeline, action history)
-
-Key constraints:
-- Action rules are deterministic — NO LLM in this agent
-- Incident lifecycle: opened → escalated → resolved (resolved when risk returns to nominal)
-- Deduplication: don't create duplicate incidents for same asset + same root cause
-- Actions are recommendations only — no direct robot control (that's Phase 4 conversation agent's domain)
-
-## Task 3.6 – End-to-End Phase 3 Validation
+## Task 3.6 – End-to-End Phase 3 Validation ✅
 **Depends on:** Task 3.4, Task 3.5
-
-Full pipeline test on LocalStack:
-1. Run `joint_3_degradation` scenario (120 events)
-2. Verify signal-agent produces elevated/critical RiskEvents
-3. Verify diagnosis-agent calls Bedrock and produces DiagnosisEvents with root cause
-4. Verify actions-agent creates incident in DynamoDB and emits ActionEvents
-5. Run `healthy` scenario — verify incident resolves, no Bedrock calls for nominal risk
-6. Verify trace propagation through all 6 services
-
-Note: Bedrock may need real AWS credentials even in LocalStack. If not available locally, mock the Bedrock client for LocalStack testing and validate real Bedrock calls in aws-sandbox.
+**Status:** Complete. Pipeline functionally tested on AWS LocalStack. MockBedrockAdapter was used to test inference capabilities within emulator limitations.
 
 ---
 
 # Phase 4 – Conversation Agent
 
-## Task 4.1 – Service Contract & Architecture
+## Task 4.1 – Service Contract & Architecture ✅
 **Depends on:** Phase 3 complete
-
-Design the voice-driven copilot interface:
-- `docs/ai/services/conversation-agent.md` — service contract
-- Architecture: Amazon Lex (intent recognition) → Lambda fulfillment → Bedrock (response generation) → Polly (speech synthesis)
-- Intent model: "What's wrong with R-17?", "Show me the fleet status", "Why is risk critical?", "What should I do?"
+**Status:** Complete. Documentation updated with Lex V2 request/response schemas, pipeline architecture, and fulfillment contract in `docs/ai/services/conversation-agent.md` and `docs/ai/architecture/lex-voice-pipeline.md`.
 
 ## Task 4.2 – Lex Bot Configuration
 **Depends on:** Task 4.1
@@ -339,8 +268,8 @@ Post-submission (March 13–20):
 |-------|--------|-------|----------|
 | Phase 1 – Tooling | ✅ Complete | — | — |
 | Phase 2 – Pipeline | ✅ Complete | 105 | 4 Lambdas, 5 packages |
-| Phase 3 – AI Agents | ⬜ Active | — | 2 Lambdas (diagnosis, actions) |
-| Phase 4 – Voice | ⬜ Planned | — | 1 Lambda (fulfillment) + Lex + Polly |
+| Phase 3 – AI Agents | ✅ Complete | 85 | 2 Lambdas (diagnosis, actions) |
+| Phase 4 – Voice | 🔄 Active | — | 1 Lambda (fulfillment) + Lex + Polly |
 | Phase 5 – Demo | ⬜ Planned | — | Grafana, video, article |
 
 **Deadline:** March 13, 2026 (article submission)
