@@ -4,19 +4,27 @@
 
 ```
 infra/
-└── envs/
-    └── localstack/           # LocalStack environment
-        ├── providers.tf      # AWS provider pointing to localhost:4566
-        ├── lambda.tf         # 4 Lambda functions + Kinesis ESM triggers
-        ├── kinesis.tf        # 3 data streams (telemetry, ingested, risk-events)
-        ├── dynamodb.tf       # asset-state table (per-asset EMA baselines)
-        ├── iam.tf            # Lambda execution roles + service policies
-        ├── eventbridge.tf    # Simulator cron (1 minute interval)
-        ├── sqs.tf            # 2 dead letter queues
-        └── outputs.tf        # All resource ARNs, names, and URLs
+├── bootstrap/              # One-time setup resources
+│   ├── github-oidc/       # GitHub Actions OIDC provider and IAM roles
+│   └── terraform-state/   # S3 bucket and DynamoDB table for state management
+├── modules/               # Reusable Terraform modules
+│   ├── lambda/           # Lambda function module
+│   ├── kinesis/          # Kinesis stream module
+│   ├── dynamodb/         # DynamoDB table module
+│   ├── apigw/            # API Gateway module (placeholder)
+│   ├── iot/              # IoT module (placeholder)
+│   ├── lex/              # Lex bot module
+│   └── s3/               # S3 bucket module (placeholder)
+└── envs/                 # Environment-specific configurations
+    ├── localstack/       # Local development (LocalStack)
+    ├── dev/              # Development environment (AWS)
+    ├── staging/          # Staging environment (AWS)
+    └── prod/             # Production environment (AWS)
 ```
 
-## Provider Configuration
+## Environment Configurations
+
+### LocalStack (Local Development)
 
 LocalStack uses test credentials with all validation skipped:
 
@@ -40,6 +48,30 @@ provider "aws" {
 }
 ```
 
+### AWS Environments (Dev, Staging, Prod)
+
+Each AWS environment has:
+- `main.tf` - Resource definitions using modules
+- `backend.tf` - S3 state backend configuration
+- `variables.tf` - Environment variables
+- `terraform.tfvars` - Environment-specific values
+- `providers.tf` - AWS provider configuration with default tags
+
+**State Backend:**
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "streaming-agents-tfstate"
+    key            = "dev/terraform.tfstate"  # or staging/prod
+    region         = "us-east-1"
+    encrypt        = true
+    kms_key_id     = "arn:aws:kms:us-east-1:ACCOUNT_ID:key/KEY_ID"
+    dynamodb_table = "streaming-agents-tfstate-locks"
+    profile        = "streaming-agents-sandbox-kong"
+  }
+}
+```
+
 ## Resource Naming
 
 All resources use the `streaming-agents-` prefix:
@@ -56,16 +88,12 @@ All resources use the `streaming-agents-` prefix:
 
 - **tflocal**: Terraform wrapper that automatically points to LocalStack (`terraform-local` pip package)
 - **awslocal**: AWS CLI alias with test credentials and LocalStack endpoint
+- **Terraform**: Version 1.5+ for AWS environments
 
-## Future Environments
+## CI/CD Integration
 
-```
-infra/
-├── modules/              # Shared Terraform modules (Phase 3+)
-│   ├── lambda/
-│   ├── kinesis/
-│   └── monitoring/
-└── envs/
-    ├── localstack/       # Local development
-    └── sandbox/          # AWS sandbox (Phase 3+)
-```
+See [CI/CD Deployment Guide](./cicd-deployment.md) for:
+- GitHub Actions workflows
+- Build once, deploy many strategy
+- Lambda artifact management
+- Multi-environment deployment

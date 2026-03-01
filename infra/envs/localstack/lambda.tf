@@ -26,7 +26,7 @@ resource "aws_lambda_function" "simulator_controller" {
   function_name = "streaming-agents-simulator-controller"
   role          = aws_iam_role.simulator_controller.arn
   handler       = "index.handler"
-  runtime       = "nodejs20.x"
+  runtime       = "nodejs22.x"
   timeout       = 30
   memory_size   = 256
 
@@ -74,7 +74,7 @@ resource "aws_lambda_function" "simulator_worker" {
   function_name = "streaming-agents-simulator-worker"
   role          = aws_iam_role.simulator_worker.arn
   handler       = "index.handler"
-  runtime       = "nodejs20.x"
+  runtime       = "nodejs22.x"
   timeout       = 90
   memory_size   = 256
 
@@ -106,7 +106,7 @@ resource "aws_lambda_function" "ingestion_service" {
   function_name = "streaming-agents-ingestion"
   role          = aws_iam_role.ingestion_service.arn
   handler       = "index.handler"
-  runtime       = "nodejs20.x"
+  runtime       = "nodejs22.x"
   timeout       = 60
   memory_size   = 256
 
@@ -157,7 +157,7 @@ resource "aws_lambda_function" "signal_agent" {
   function_name = "streaming-agents-signal-agent"
   role          = aws_iam_role.signal_agent.arn
   handler       = "index.handler"
-  runtime       = "nodejs20.x"
+  runtime       = "nodejs22.x"
   timeout       = 60
   memory_size   = 256
 
@@ -210,7 +210,7 @@ resource "aws_lambda_function" "diagnosis_agent" {
   function_name = "streaming-agents-diagnosis-agent"
   role          = aws_iam_role.diagnosis_agent.arn
   handler       = "index.handler"
-  runtime       = "nodejs20.x"
+  runtime       = "nodejs22.x"
   timeout       = 60
   memory_size   = 512 # Larger for Bedrock payloads
 
@@ -264,7 +264,7 @@ resource "aws_lambda_function" "actions_agent" {
   function_name = "streaming-agents-actions-agent"
   role          = aws_iam_role.actions_agent.arn
   handler       = "index.handler"
-  runtime       = "nodejs20.x"
+  runtime       = "nodejs22.x"
   timeout       = 60
   memory_size   = 256
 
@@ -317,7 +317,7 @@ resource "aws_lambda_function" "conversation_agent" {
   function_name = "streaming-agents-conversation-agent"
   role          = aws_iam_role.conversation_agent.arn
   handler       = "index.handler"
-  runtime       = "nodejs20.x"
+  runtime       = "nodejs22.x"
   timeout       = 30
   memory_size   = 512
 

@@ -72,7 +72,7 @@ async function bundleLambda(lambda: LambdaConfig): Promise<void> {
     entryPoints: [entryPath],
     bundle: true,
     platform: 'node',
-    target: 'node20',
+    target: 'node22',
     format: 'cjs',
     outfile: outFile,
     external: [

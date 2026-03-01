@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node 20+
+- Node 22+
 - pnpm
 - uv
 - Docker (for LocalStack)

@@ -22,7 +22,7 @@ resource "aws_lambda_function" "conversation_agent" {
   function_name = "streaming-agents-conversation-agent"
   role          = aws_iam_role.conversation_agent.arn
   handler       = "index.handler"
-  runtime       = "nodejs20.x"
+  runtime       = "nodejs22.x"
   timeout       = 30
   memory_size   = 512
 

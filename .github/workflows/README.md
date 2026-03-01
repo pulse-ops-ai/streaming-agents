@@ -15,6 +15,7 @@ This directory contains CI/CD workflows for the streaming-agents project.
 
 **Jobs:**
 1. **build-typescript** - Builds all TypeScript Lambda functions
+   - Uses Node.js 22 (LTS until April 2027)
    - Uses pnpm for dependency management
    - Bundles with esbuild via `tools/bundle-lambda.ts`
    - Creates ZIP deployment packages

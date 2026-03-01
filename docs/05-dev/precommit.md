@@ -6,7 +6,7 @@ Local pre-commit pipeline for formatting, linting, and secret scanning.
 
 | Tool | Install |
 |------|---------|
-| **Node ≥ 20** | [nodejs.org](https://nodejs.org) |
+| **Node ≥ 22** | [nodejs.org](https://nodejs.org) |
 | **pnpm ≥ 9** | `corepack enable && corepack prepare pnpm@latest --activate` |
 | **Python ≥ 3.12** | system package manager or [python.org](https://python.org) |
 | **uv** | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |

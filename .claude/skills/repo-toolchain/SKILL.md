@@ -19,7 +19,7 @@ Set up the full monorepo toolchain from scratch so that pnpm, uv, Biome, Ruff, a
 
 | Input | Source |
 |-------|--------|
-| Node version | `engines.node` in `package.json` (>=20) |
+| Node version | `engines.node` in `package.json` (>=22) |
 | pnpm version | `packageManager` in `package.json` (pnpm@9.15.4) |
 | Python version | `.python-version` (3.12) |
 | uv workspace | `python/pyproject.toml` `[tool.uv.workspace]` |

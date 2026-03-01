@@ -217,7 +217,7 @@ module "my_function" {
 
   function_name = "streaming-agents-my-function"
   handler       = "index.handler"
-  runtime       = "nodejs20.x"
+  runtime       = "nodejs22.x"
   memory_size   = 512
   timeout       = 30
   role_arn      = aws_iam_role.my_function.arn
