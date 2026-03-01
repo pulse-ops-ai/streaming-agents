@@ -28,6 +28,8 @@ export interface IncidentRecord {
   opened_at: string
   /** ISO 8601 timestamp when the incident was escalated; null if not escalated. */
   escalated_at: string | null
+  /** ISO 8601 timestamp when the incident was acknowledged by an operator; null if unacknowledged. */
+  acknowledged_at: string | null
   /** ISO 8601 timestamp when the incident was resolved; null if still active. */
   resolved_at: string | null
   /** Root cause from the initial DiagnosisEvent. */

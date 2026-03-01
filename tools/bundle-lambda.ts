@@ -49,6 +49,11 @@ const LAMBDAS: LambdaConfig[] = [
     dir: path.join(LAMBDAS_DIR, 'actions-agent'),
     entryPoint: 'src/index.ts',
   },
+  {
+    name: 'conversation-agent',
+    dir: path.join(LAMBDAS_DIR, 'conversation-agent'),
+    entryPoint: 'src/main.ts',
+  },
 ]
 
 async function bundleLambda(lambda: LambdaConfig): Promise<void> {
