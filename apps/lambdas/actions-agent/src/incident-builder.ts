@@ -34,6 +34,7 @@ export function buildIncidentRecord(
       opened_at: now,
       escalated_at: diagnosis.severity === 'critical' ? now : null,
       resolved_at: null,
+      acknowledged_at: null,
       root_cause: diagnosis.root_cause,
       severity: diagnosis.severity,
       last_diagnosis_event_id: diagnosis.event_id,
