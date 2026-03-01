@@ -1,7 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, GetCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
-import { Injectable } from '@nestjs/common'
-import type { ConfigService } from '@nestjs/config'
+import { Inject, Injectable } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import type { AssetState } from '@streaming-agents/core-contracts'
 
 @Injectable()
@@ -9,7 +9,7 @@ export class AssetStateAdapter {
   private readonly docClient: DynamoDBDocumentClient
   private readonly tableName: string
 
-  constructor(config: ConfigService) {
+  constructor(@Inject(ConfigService) config: ConfigService) {
     const region = config.get('AWS_REGION') || 'us-east-1'
     this.tableName = config.get<string>('DYNAMODB_ASSET_TABLE') ?? 'streaming-agents-asset-state'
 

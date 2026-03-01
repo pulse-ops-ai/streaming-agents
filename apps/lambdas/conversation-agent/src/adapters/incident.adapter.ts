@@ -1,7 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
-import { Injectable, Logger } from '@nestjs/common'
-import type { ConfigService } from '@nestjs/config'
+import { Inject, Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import type { IncidentRecord } from '@streaming-agents/core-contracts'
 
 @Injectable()
@@ -10,7 +10,7 @@ export class IncidentAdapter {
   private readonly docClient: DynamoDBDocumentClient
   private readonly tableName: string
 
-  constructor(config: ConfigService) {
+  constructor(@Inject(ConfigService) config: ConfigService) {
     const region = config.get('AWS_REGION') || 'us-east-1'
     this.tableName = config.get<string>('DYNAMODB_INCIDENTS_TABLE') ?? 'streaming-agents-incidents'
 

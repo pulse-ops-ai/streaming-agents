@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import type { LexFulfillmentRequest } from '@streaming-agents/core-contracts'
-import type { ConversationBedrockAdapter } from '../adapters/bedrock.adapter.js'
-import type { IncidentAdapter } from '../adapters/incident.adapter.js'
+import { ConversationBedrockAdapter } from '../adapters/bedrock.adapter.js'
+import { IncidentAdapter } from '../adapters/incident.adapter.js'
 import type { ResponseInput } from '../lex/response-builder.js'
 import type { IntentHandler } from './intent.handler.js'
 
@@ -10,8 +10,8 @@ export class RecommendActionHandler implements IntentHandler {
   private readonly logger = new Logger(RecommendActionHandler.name)
 
   constructor(
-    private readonly incidents: IncidentAdapter,
-    private readonly bedrock: ConversationBedrockAdapter
+    @Inject(IncidentAdapter) private readonly incidents: IncidentAdapter,
+    @Inject(ConversationBedrockAdapter) private readonly bedrock: ConversationBedrockAdapter
   ) {}
 
   async handle(event: LexFulfillmentRequest): Promise<ResponseInput> {

@@ -5,7 +5,7 @@ import type {
   LexFulfillmentRequest,
   LexFulfillmentResponse,
 } from '@streaming-agents/core-contracts'
-import { TelemetryModule } from '@streaming-agents/core-telemetry'
+import { TelemetryModule, TelemetryService } from '@streaming-agents/core-telemetry'
 
 import { AssetStateAdapter } from './adapters/asset-state.adapter.js'
 import { BedrockModule } from './adapters/bedrock.module.js'
@@ -20,7 +20,7 @@ import { FleetOverviewHandler } from './intents/fleet-overview.handler.js'
 import { RecommendActionHandler } from './intents/recommend-action.handler.js'
 
 @Module({
-  imports: [ConfigModule, TelemetryModule, BedrockModule],
+  imports: [ConfigModule.forRoot(), TelemetryModule.forRoot('conversation-agent'), BedrockModule],
   providers: [
     IntentRouter,
     AssetStateAdapter,

@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import type { LexFulfillmentRequest } from '@streaming-agents/core-contracts'
-import type { AssetStateAdapter } from '../adapters/asset-state.adapter.js'
-import type { ConversationBedrockAdapter } from '../adapters/bedrock.adapter.js'
+import { AssetStateAdapter } from '../adapters/asset-state.adapter.js'
+import { ConversationBedrockAdapter } from '../adapters/bedrock.adapter.js'
 import type { ResponseInput } from '../lex/response-builder.js'
 import type { IntentHandler } from './intent.handler.js'
 
@@ -10,8 +10,8 @@ export class AssetStatusHandler implements IntentHandler {
   private readonly logger = new Logger(AssetStatusHandler.name)
 
   constructor(
-    private readonly assetState: AssetStateAdapter,
-    private readonly bedrock: ConversationBedrockAdapter
+    @Inject(AssetStateAdapter) private readonly assetState: AssetStateAdapter,
+    @Inject(ConversationBedrockAdapter) private readonly bedrock: ConversationBedrockAdapter
   ) {}
 
   async handle(event: LexFulfillmentRequest): Promise<ResponseInput> {

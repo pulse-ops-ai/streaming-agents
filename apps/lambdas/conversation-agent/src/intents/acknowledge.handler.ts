@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import type { LexFulfillmentRequest } from '@streaming-agents/core-contracts'
-import type { IncidentAdapter } from '../adapters/incident.adapter.js'
+import { IncidentAdapter } from '../adapters/incident.adapter.js'
 import type { ResponseInput } from '../lex/response-builder.js'
 import type { IntentHandler } from './intent.handler.js'
 
@@ -8,7 +8,7 @@ import type { IntentHandler } from './intent.handler.js'
 export class AcknowledgeIncidentHandler implements IntentHandler {
   private readonly logger = new Logger(AcknowledgeIncidentHandler.name)
 
-  constructor(private readonly incidents: IncidentAdapter) {}
+  constructor(@Inject(IncidentAdapter) private readonly incidents: IncidentAdapter) {}
 
   async handle(event: LexFulfillmentRequest): Promise<ResponseInput> {
     const assetId = event.sessionState.intent.slots.asset_id?.value?.interpretedValue
