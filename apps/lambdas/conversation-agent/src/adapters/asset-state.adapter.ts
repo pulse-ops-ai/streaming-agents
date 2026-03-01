@@ -13,11 +13,13 @@ export class AssetStateAdapter {
     const region = config.get('AWS_REGION') || 'us-east-1'
     this.tableName = config.get<string>('DYNAMODB_ASSET_TABLE') ?? 'streaming-agents-asset-state'
 
+    const nodeEnv = config.get('NODE_ENV')
     const client = new DynamoDBClient({
       region,
-      // If deployed in localstack, configure endpoint override. Handled naturally by existing SDK pattern in sandbox.
-      ...(config.get('NODE_ENV') === 'local' && {
-        endpoint: 'http://localhost:4566',
+      ...((nodeEnv === 'local' || nodeEnv === 'localstack') && {
+        endpoint: config.get('LOCALSTACK_HOSTNAME')
+          ? `http://${config.get('LOCALSTACK_HOSTNAME')}:4566`
+          : 'http://localhost:4566',
       }),
     })
     this.docClient = DynamoDBDocumentClient.from(client)
