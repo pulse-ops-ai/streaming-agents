@@ -310,3 +310,36 @@ resource "aws_lambda_event_source_mapping" "actions_agent_kinesis" {
     }
   }
 }
+
+# ── Phase 4: Conversation Agent Lambda ───────────────────────────
+
+resource "aws_lambda_function" "conversation_agent" {
+  function_name = "streaming-agents-conversation-agent"
+  role          = aws_iam_role.conversation_agent.arn
+  handler       = "index.handler"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 512
+
+  filename         = data.archive_file.lambda_placeholder.output_path
+  source_code_hash = data.archive_file.lambda_placeholder.output_base64sha256
+
+  environment {
+    variables = {
+      NODE_ENV              = "localstack"
+      AWS_REGION            = "us-east-1"
+      DYNAMODB_ASSET_TABLE  = aws_dynamodb_table.asset_state.name
+      DYNAMODB_INCIDENTS_TABLE = aws_dynamodb_table.incidents.name
+      BEDROCK_MODEL_ID      = "anthropic.claude-sonnet-4-20250514"
+      BEDROCK_REGION        = "us-east-1"
+      OTEL_SERVICE_NAME     = "conversation-agent"
+    }
+  }
+
+  tags = {
+    Name        = "streaming-agents-conversation-agent"
+    Environment = "localstack"
+    Service     = "conversation-agent"
+    Project     = "streaming-agents"
+  }
+}

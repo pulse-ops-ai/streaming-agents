@@ -1,0 +1,29 @@
+{
+  "messageVersion": "1.0",
+  "invocationSource": "FulfillmentCodeHook",
+  "sessionState": {
+    "intent": {
+      "name": "ExplainRisk",
+      "slots": {
+        "asset_id": {
+          "value": {
+            "originalValue": "R-17",
+            "interpretedValue": "R-17",
+            "resolvedValues": ["R-17"]
+          }
+        }
+      },
+      "state": "InProgress"
+    },
+    "sessionAttributes": {}
+  },
+  "bot": {
+    "id": "test-bot",
+    "name": "streaming-agents-copilot",
+    "aliasId": "TSTALIASID",
+    "aliasName": "TestBotAlias",
+    "localeId": "en_US",
+    "version": "DRAFT"
+  },
+  "inputTranscript": "Why is R-17 critical?"
+}
