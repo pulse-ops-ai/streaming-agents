@@ -7,7 +7,7 @@ locals {
     Project      = "streaming-agents"
     ManagedBy    = "terraform"
     Repository   = "pulse-ops-ai/streaming-agents"
-    AutoShutdown = "false"  # Never auto-shutdown in production
+    AutoShutdown = "false" # Never auto-shutdown in production
   }
 }
 

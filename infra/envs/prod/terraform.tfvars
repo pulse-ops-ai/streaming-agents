@@ -4,7 +4,7 @@ aws_profile = "streaming-agents-sandbox-kong"
 
 # Kinesis Configuration (production capacity)
 kinesis_shard_count      = 8
-kinesis_retention_period = 168  # 7 days
+kinesis_retention_period = 168 # 7 days
 
 # Lambda Configuration (production resources)
 lambda_memory_mb   = 2048

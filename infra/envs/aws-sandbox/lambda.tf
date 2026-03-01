@@ -31,13 +31,13 @@ resource "aws_lambda_function" "conversation_agent" {
 
   environment {
     variables = {
-      NODE_ENV              = "aws-sandbox"
-      AWS_REGION            = "us-east-1"
-      DYNAMODB_ASSET_TABLE  = aws_dynamodb_table.asset_state.name
+      NODE_ENV                 = "aws-sandbox"
+      AWS_REGION               = "us-east-1"
+      DYNAMODB_ASSET_TABLE     = aws_dynamodb_table.asset_state.name
       DYNAMODB_INCIDENTS_TABLE = aws_dynamodb_table.incidents.name
-      BEDROCK_MODEL_ID      = "anthropic.claude-sonnet-4-20250514"
-      BEDROCK_REGION        = "us-east-1"
-      OTEL_SERVICE_NAME     = "conversation-agent"
+      BEDROCK_MODEL_ID         = "anthropic.claude-sonnet-4-20250514"
+      BEDROCK_REGION           = "us-east-1"
+      OTEL_SERVICE_NAME        = "conversation-agent"
     }
   }
 

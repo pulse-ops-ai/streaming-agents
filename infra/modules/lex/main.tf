@@ -34,20 +34,20 @@ resource "aws_iam_role_policy_attachment" "lex_polly" {
 }
 
 resource "aws_lexv2models_bot" "copilot" {
-  count                        = var.enable_lex ? 1 : 0
-  name                         = "streaming-agents-copilot"
-  role_arn                     = aws_iam_role.lex_exec_role[0].arn
-  idle_session_ttl_in_seconds  = 300
+  count                       = var.enable_lex ? 1 : 0
+  name                        = "streaming-agents-copilot"
+  role_arn                    = aws_iam_role.lex_exec_role[0].arn
+  idle_session_ttl_in_seconds = 300
   data_privacy {
     child_directed = false
   }
 }
 
 resource "aws_lexv2models_bot_locale" "en_us" {
-  count                        = var.enable_lex ? 1 : 0
-  bot_id                       = aws_lexv2models_bot.copilot[0].id
-  bot_version                  = "DRAFT"
-  locale_id                    = "en_US"
+  count                            = var.enable_lex ? 1 : 0
+  bot_id                           = aws_lexv2models_bot.copilot[0].id
+  bot_version                      = "DRAFT"
+  locale_id                        = "en_US"
   n_lu_intent_confidence_threshold = 0.40
 
   voice_settings {
@@ -108,12 +108,12 @@ resource "aws_lexv2models_intent" "asset_status" {
 }
 
 resource "aws_lexv2models_slot" "asset_status_asset_id" {
-  count       = var.enable_lex ? 1 : 0
-  bot_id      = aws_lexv2models_bot.copilot[0].id
-  bot_version = aws_lexv2models_bot_locale.en_us[0].bot_version
-  locale_id   = aws_lexv2models_bot_locale.en_us[0].locale_id
-  intent_id   = aws_lexv2models_intent.asset_status[0].intent_id
-  name        = "asset_id"
+  count        = var.enable_lex ? 1 : 0
+  bot_id       = aws_lexv2models_bot.copilot[0].id
+  bot_version  = aws_lexv2models_bot_locale.en_us[0].bot_version
+  locale_id    = aws_lexv2models_bot_locale.en_us[0].locale_id
+  intent_id    = aws_lexv2models_intent.asset_status[0].intent_id
+  name         = "asset_id"
   slot_type_id = aws_lexv2models_slot_type.asset_id[0].slot_type_id
 
   value_elicitation_setting {
@@ -171,12 +171,12 @@ resource "aws_lexv2models_intent" "explain_risk" {
 }
 
 resource "aws_lexv2models_slot" "explain_risk_asset_id" {
-  count       = var.enable_lex ? 1 : 0
-  bot_id      = aws_lexv2models_bot.copilot[0].id
-  bot_version = aws_lexv2models_bot_locale.en_us[0].bot_version
-  locale_id   = aws_lexv2models_bot_locale.en_us[0].locale_id
-  intent_id   = aws_lexv2models_intent.explain_risk[0].intent_id
-  name        = "asset_id"
+  count        = var.enable_lex ? 1 : 0
+  bot_id       = aws_lexv2models_bot.copilot[0].id
+  bot_version  = aws_lexv2models_bot_locale.en_us[0].bot_version
+  locale_id    = aws_lexv2models_bot_locale.en_us[0].locale_id
+  intent_id    = aws_lexv2models_intent.explain_risk[0].intent_id
+  name         = "asset_id"
   slot_type_id = aws_lexv2models_slot_type.asset_id[0].slot_type_id
 
   value_elicitation_setting {
@@ -213,12 +213,12 @@ resource "aws_lexv2models_intent" "recommend_action" {
 }
 
 resource "aws_lexv2models_slot" "recommend_action_asset_id" {
-  count       = var.enable_lex ? 1 : 0
-  bot_id      = aws_lexv2models_bot.copilot[0].id
-  bot_version = aws_lexv2models_bot_locale.en_us[0].bot_version
-  locale_id   = aws_lexv2models_bot_locale.en_us[0].locale_id
-  intent_id   = aws_lexv2models_intent.recommend_action[0].intent_id
-  name        = "asset_id"
+  count        = var.enable_lex ? 1 : 0
+  bot_id       = aws_lexv2models_bot.copilot[0].id
+  bot_version  = aws_lexv2models_bot_locale.en_us[0].bot_version
+  locale_id    = aws_lexv2models_bot_locale.en_us[0].locale_id
+  intent_id    = aws_lexv2models_intent.recommend_action[0].intent_id
+  name         = "asset_id"
   slot_type_id = aws_lexv2models_slot_type.asset_id[0].slot_type_id
 
   value_elicitation_setting {
@@ -255,12 +255,12 @@ resource "aws_lexv2models_intent" "acknowledge_incident" {
 }
 
 resource "aws_lexv2models_slot" "acknowledge_incident_asset_id" {
-  count       = var.enable_lex ? 1 : 0
-  bot_id      = aws_lexv2models_bot.copilot[0].id
-  bot_version = aws_lexv2models_bot_locale.en_us[0].bot_version
-  locale_id   = aws_lexv2models_bot_locale.en_us[0].locale_id
-  intent_id   = aws_lexv2models_intent.acknowledge_incident[0].intent_id
-  name        = "asset_id"
+  count        = var.enable_lex ? 1 : 0
+  bot_id       = aws_lexv2models_bot.copilot[0].id
+  bot_version  = aws_lexv2models_bot_locale.en_us[0].bot_version
+  locale_id    = aws_lexv2models_bot_locale.en_us[0].locale_id
+  intent_id    = aws_lexv2models_intent.acknowledge_incident[0].intent_id
+  name         = "asset_id"
   slot_type_id = aws_lexv2models_slot_type.asset_id[0].slot_type_id
 
   value_elicitation_setting {
@@ -280,8 +280,8 @@ resource "aws_lexv2models_slot" "acknowledge_incident_asset_id" {
 
 # --- Alias & Hook Integration ---
 resource "aws_lexv2models_bot_version" "copilot_ver" {
-  count       = var.enable_lex ? 1 : 0
-  bot_id      = aws_lexv2models_bot.copilot[0].id
+  count  = var.enable_lex ? 1 : 0
+  bot_id = aws_lexv2models_bot.copilot[0].id
   locale_specification = {
     (aws_lexv2models_bot_locale.en_us[0].locale_id) = {
       source_bot_version = "DRAFT"

@@ -365,9 +365,9 @@ resource "aws_iam_policy" "iam_management" {
         Resource = "arn:aws:iam::${var.aws_account_id}:role/streaming-agents-*"
       },
       {
-        Sid    = "IAMPassRole"
-        Effect = "Allow"
-        Action = "iam:PassRole"
+        Sid      = "IAMPassRole"
+        Effect   = "Allow"
+        Action   = "iam:PassRole"
         Resource = "arn:aws:iam::${var.aws_account_id}:role/streaming-agents-*"
         Condition = {
           StringEquals = {
