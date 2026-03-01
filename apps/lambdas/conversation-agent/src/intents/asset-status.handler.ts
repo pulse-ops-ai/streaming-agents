@@ -51,18 +51,18 @@ Signal Values: ${JSON.stringify(state.last_values)}
 
     const prompt = `You are a maintenance copilot for a robotic fleet.
 The user is asking about the status of ${assetId}. Speak concisely like a helpful colleague. Use plain language, not technical jargon. Keep responses under 3 sentences unless the operator asks for detail.
-If the state is elevated or critical, highlight the likely cause based on the signals provided. Include SSML tags to add voice inflection.`
+If the state is elevated or critical, highlight the likely cause based on the signals provided.`
 
-    const ssmlResponse = await this.bedrock.generateResponse(prompt, context)
-
-    // A hacky cleanup: since standard bedrock response includes SSML wrapped fully
-    // We expect the exact SSML and stripping tags for plain text fallback.
-    const plainText = ssmlResponse.replace(/<[^>]+>/g, '').trim()
+    const message = await this.bedrock.generateResponse(prompt, context)
 
     return {
       intentName: event.sessionState.intent.name,
-      message: plainText,
-      ssml: ssmlResponse.startsWith('<speak>') ? ssmlResponse : `<speak>${ssmlResponse}</speak>`,
+      message,
+      speechContext: {
+        severity: state.risk_state === 'critical' ? 'critical' : 'warning',
+        intentName: event.sessionState.intent.name,
+        hasIncident: false,
+      },
     }
   }
 }

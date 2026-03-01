@@ -27,16 +27,31 @@ describe('FleetOverviewHandler', () => {
     expect(mockBedrock.generateResponse).not.toHaveBeenCalled()
   })
 
-  it('delegates anomalous fleet to Bedrock', async () => {
+  it('delegates anomalous fleet to Bedrock with critical speechContext', async () => {
     mockAdapter.scanAllAssets.mockResolvedValueOnce([
       { risk_state: 'nominal' },
       { asset_id: 'R-17', risk_state: 'critical', composite_risk: 0.95 },
     ])
-    mockBedrock.generateResponse.mockResolvedValueOnce('<speak>R-17 is critical.</speak>')
+    mockBedrock.generateResponse.mockResolvedValueOnce('R-17 is critical.')
 
     const res = await handler.handle(event)
     expect(mockBedrock.generateResponse).toHaveBeenCalled()
-    expect(res.ssml).toBe('<speak>R-17 is critical.</speak>')
     expect(res.message).toBe('R-17 is critical.')
+    expect(res.speechContext).toEqual({
+      severity: 'critical',
+      intentName: 'FleetOverview',
+      hasIncident: true,
+    })
+  })
+
+  it('uses warning severity when no critical assets', async () => {
+    mockAdapter.scanAllAssets.mockResolvedValueOnce([
+      { risk_state: 'nominal' },
+      { asset_id: 'R-50', risk_state: 'elevated', composite_risk: 0.7 },
+    ])
+    mockBedrock.generateResponse.mockResolvedValueOnce('R-50 is elevated.')
+
+    const res = await handler.handle(event)
+    expect(res.speechContext?.severity).toBe('warning')
   })
 })

@@ -1,30 +1,28 @@
 import type { LexFulfillmentResponse } from '@streaming-agents/core-contracts'
+import { type SpeechContext, enhanceForSpeech } from './ssml.js'
+
+export type { SpeechContext }
 
 export interface ResponseInput {
   intentName: string
   message: string
-  ssml?: string
+  speechContext?: SpeechContext
   sessionAttributes?: Record<string, string>
 }
 
 /**
- * Wraps text (and optional SSML) into a standard Lex V2 Response shape.
+ * Wraps text into a standard Lex V2 Response shape.
+ * Always generates SSML via enhanceForSpeech() so every response gets
+ * correct, Polly-neural-compatible SSML.
  */
 export function buildLexResponse(input: ResponseInput): LexFulfillmentResponse {
-  const messages: LexFulfillmentResponse['messages'] = [
-    {
-      contentType: 'PlainText',
-      content: input.message,
-    },
-  ]
-
-  // If SSML is provided, push it as the primary response (Polly prioritizes it)
-  if (input.ssml) {
-    messages.unshift({
-      contentType: 'SSML',
-      content: input.ssml,
-    })
+  const speechContext: SpeechContext = input.speechContext ?? {
+    severity: 'info',
+    intentName: input.intentName,
+    hasIncident: false,
   }
+
+  const ssml = enhanceForSpeech(input.message, speechContext)
 
   return {
     sessionState: {
@@ -37,6 +35,9 @@ export function buildLexResponse(input: ResponseInput): LexFulfillmentResponse {
       },
       sessionAttributes: input.sessionAttributes ?? {},
     },
-    messages,
+    messages: [
+      { contentType: 'SSML', content: ssml },
+      { contentType: 'PlainText', content: input.message },
+    ],
   }
 }

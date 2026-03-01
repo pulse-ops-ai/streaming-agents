@@ -47,13 +47,17 @@ The operator is asking for a fleet overview.
 Summarize the state of the fleet. Speak concisely like a helpful colleague in under 3 sentences.
 Highlight the count of nominal vs at-risk assets, and name the specific at-risk assets.`
 
-    const ssmlResponse = await this.bedrock.generateResponse(prompt, context)
-    const plainText = ssmlResponse.replace(/<[^>]+>/g, '').trim()
+    const message = await this.bedrock.generateResponse(prompt, context)
 
+    const hasCritical = nonNominal.some((a) => a.risk_state === 'critical')
     return {
       intentName: event.sessionState.intent.name,
-      message: plainText,
-      ssml: ssmlResponse.startsWith('<speak>') ? ssmlResponse : `<speak>${ssmlResponse}</speak>`,
+      message,
+      speechContext: {
+        severity: hasCritical ? 'critical' : 'warning',
+        intentName: event.sessionState.intent.name,
+        hasIncident: nonNominal.length > 0,
+      },
     }
   }
 }

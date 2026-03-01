@@ -29,7 +29,7 @@ describe('RecommendActionHandler', () => {
     expect(mockBedrock.generateResponse).not.toHaveBeenCalled()
   })
 
-  it('delegates to Bedrock when incident is present', async () => {
+  it('delegates to Bedrock with incident severity speechContext', async () => {
     mockIncident.findActiveIncident.mockResolvedValueOnce({
       status: 'opened',
       severity: 'warning',
@@ -40,5 +40,22 @@ describe('RecommendActionHandler', () => {
     const res = await handler.handle(createEvent('R-17'))
     expect(mockBedrock.generateResponse).toHaveBeenCalled()
     expect(res.message).toBe('I recommend a cooling cycle.')
+    expect(res.speechContext).toEqual({
+      severity: 'warning',
+      intentName: 'RecommendAction',
+      hasIncident: true,
+    })
+  })
+
+  it('uses critical severity for critical incidents', async () => {
+    mockIncident.findActiveIncident.mockResolvedValueOnce({
+      status: 'escalated',
+      severity: 'critical',
+      root_cause: 'Pressure seal failure',
+    })
+    mockBedrock.generateResponse.mockResolvedValueOnce('Shut down immediately.')
+
+    const res = await handler.handle(createEvent('R-17'))
+    expect(res.speechContext?.severity).toBe('critical')
   })
 })

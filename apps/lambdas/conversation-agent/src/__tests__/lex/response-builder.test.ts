@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildLexResponse } from '../../lex/response-builder.js'
 
 describe('Lex V2 Response Builder', () => {
-  it('builds a plain text response without SSML', () => {
+  it('always produces SSML and PlainText messages', () => {
     const response = buildLexResponse({
       intentName: 'TestIntent',
       message: 'Hello, world!',
@@ -13,30 +13,36 @@ describe('Lex V2 Response Builder', () => {
     expect(response.sessionState.dialogAction.type).toBe('Close')
     expect(response.sessionState.sessionAttributes).toEqual({})
 
-    expect(response.messages).toHaveLength(1)
-    expect(response.messages?.[0]).toEqual({
+    expect(response.messages).toHaveLength(2)
+    expect(response.messages?.[0]?.contentType).toBe('SSML')
+    expect(response.messages?.[0]?.content).toMatch(/^<speak>/)
+    expect(response.messages?.[1]).toEqual({
       contentType: 'PlainText',
       content: 'Hello, world!',
     })
   })
 
-  it('builds a response with SSML prioritizing the SSML message', () => {
+  it('defaults to info severity when speechContext is omitted', () => {
     const response = buildLexResponse({
       intentName: 'TestIntent',
-      message: 'Priority message.',
-      ssml: '<speak>Priority <emphasis>message.</emphasis></speak>',
+      message: 'Everything is fine.',
     })
 
-    expect(response.messages).toHaveLength(2)
-    // SSML should be the first message so Polly uses it
-    expect(response.messages?.[0]).toEqual({
-      contentType: 'SSML',
-      content: '<speak>Priority <emphasis>message.</emphasis></speak>',
+    const ssml = response.messages?.[0]?.content ?? ''
+    // Info severity: no emphasis, no break
+    expect(ssml).toBe('<speak>Everything is fine.</speak>')
+  })
+
+  it('applies critical emphasis when speechContext has critical severity', () => {
+    const response = buildLexResponse({
+      intentName: 'ExplainRisk',
+      message: 'Pressure seal failure detected. Shutdown recommended.',
+      speechContext: { severity: 'critical', intentName: 'ExplainRisk', hasIncident: true },
     })
-    expect(response.messages?.[1]).toEqual({
-      contentType: 'PlainText',
-      content: 'Priority message.',
-    })
+
+    const ssml = response.messages?.[0]?.content ?? ''
+    expect(ssml).toContain('<emphasis level="strong">')
+    expect(ssml).toContain('<break time="400ms"/>')
   })
 
   it('preserves passed sessionAttributes', () => {

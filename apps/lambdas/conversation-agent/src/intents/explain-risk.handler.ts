@@ -56,15 +56,20 @@ Incident Severity: ${incident?.severity || 'None'}
 
     const prompt = `You are a maintenance copilot for a robotic fleet.
 The user is asking you to explain the risk surrounding ${assetId}. Speak concisely like a helpful colleague. Use plain language, not technical jargon. Keep responses under 3 sentences unless asked for detail.
-Explain why the asset is at risk by referencing the specific signals and the incident root cause. Use SSML tags for inflection where appropriate.`
+Explain why the asset is at risk by referencing the specific signals and the incident root cause.`
 
-    const ssmlResponse = await this.bedrock.generateResponse(prompt, context)
-    const plainText = ssmlResponse.replace(/<[^>]+>/g, '').trim()
+    const message = await this.bedrock.generateResponse(prompt, context)
 
+    const severity =
+      incident?.severity ?? (state?.risk_state === 'critical' ? 'critical' : 'warning')
     return {
       intentName,
-      message: plainText,
-      ssml: ssmlResponse.startsWith('<speak>') ? ssmlResponse : `<speak>${ssmlResponse}</speak>`,
+      message,
+      speechContext: {
+        severity,
+        intentName,
+        hasIncident: !!incident,
+      },
     }
   }
 }

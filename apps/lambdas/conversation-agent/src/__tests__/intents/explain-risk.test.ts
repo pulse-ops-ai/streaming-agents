@@ -38,15 +38,34 @@ describe('ExplainRiskHandler', () => {
     expect(mockBedrock.generateResponse).not.toHaveBeenCalled()
   })
 
-  it('delegates to Bedrock when incident is present', async () => {
+  it('delegates to Bedrock with incident severity when incident is present', async () => {
     mockAssetState.getAssetState.mockResolvedValueOnce({ risk_state: 'critical' })
-    mockIncident.findActiveIncident.mockResolvedValueOnce({ root_cause: 'Bearing wear' })
+    mockIncident.findActiveIncident.mockResolvedValueOnce({
+      root_cause: 'Bearing wear',
+      severity: 'warning',
+    })
     mockBedrock.generateResponse.mockResolvedValueOnce('The friction is high causing bearing wear.')
 
     const res = await handler.handle(createEvent('R-17'))
     expect(mockBedrock.generateResponse).toHaveBeenCalled()
     expect(res.message).toBe('The friction is high causing bearing wear.')
-    // Fallback SSML wrap logic verify
-    expect(res.ssml).toBe('<speak>The friction is high causing bearing wear.</speak>')
+    expect(res.speechContext).toEqual({
+      severity: 'warning',
+      intentName: 'ExplainRisk',
+      hasIncident: true,
+    })
+  })
+
+  it('uses critical severity from risk_state when no incident', async () => {
+    mockAssetState.getAssetState.mockResolvedValueOnce({ risk_state: 'critical' })
+    mockIncident.findActiveIncident.mockResolvedValueOnce(null)
+    mockBedrock.generateResponse.mockResolvedValueOnce('Pressure is dangerously high.')
+
+    const res = await handler.handle(createEvent('R-17'))
+    expect(res.speechContext).toEqual({
+      severity: 'critical',
+      intentName: 'ExplainRisk',
+      hasIncident: false,
+    })
   })
 })

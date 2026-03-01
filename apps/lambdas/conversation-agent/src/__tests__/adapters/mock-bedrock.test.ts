@@ -8,37 +8,40 @@ describe('MockBedrockAdapter', () => {
 
   const adapter = new MockBedrockAdapter(mockTelemetry)
 
-  it('returns asset status response for Risk State context', async () => {
+  it('returns plain text asset status response for Risk State context', async () => {
     const result = await adapter.generateResponse(
       'You are a maintenance copilot',
       'Asset ID: R-17\nRisk State: critical\nComposite Risk Score: 0.92'
     )
     expect(result).toContain('pressure seals')
-    expect(result).toContain('<speak>')
+    expect(result).not.toContain('<speak>')
   })
 
-  it('returns fleet overview response for Elevated/Critical Assets Count context', async () => {
+  it('returns plain text fleet overview response for Elevated/Critical Assets Count context', async () => {
     const result = await adapter.generateResponse(
       'You are a maintenance copilot',
       'Nominal Assets Count: 7\nElevated/Critical Assets Count: 3'
     )
     expect(result).toContain('alerts on 3 assets')
+    expect(result).not.toContain('<speak>')
   })
 
-  it('returns explain risk response for Z-Scores context', async () => {
+  it('returns plain text explain risk response for Z-Scores context', async () => {
     const result = await adapter.generateResponse(
       'You are a maintenance copilot',
       'Z-Scores: {"joint_friction": 2.5}\nActive Incident Root Cause: Bearing wear'
     )
     expect(result).toContain('joint friction')
+    expect(result).not.toContain('<speak>')
   })
 
-  it('returns recommend action response for Incident Status context', async () => {
+  it('returns plain text recommend action response for Incident Status context', async () => {
     const result = await adapter.generateResponse(
       'You are a maintenance copilot',
       'Incident Status: opened\nIncident Severity: warning\nRoot Cause: Heat anomaly'
     )
     expect(result).toContain('throttle the operational speed')
+    expect(result).not.toContain('<speak>')
   })
 
   it('returns generic fallback for unmatched context', async () => {

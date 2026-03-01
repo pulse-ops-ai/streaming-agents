@@ -14,8 +14,8 @@ describe('FallbackHandler', () => {
     expect(res.message).toContain('not sure what you mean')
   })
 
-  it('does not include SSML', async () => {
+  it('does not include speechContext', async () => {
     const res = await handler.handle(event)
-    expect(res.ssml).toBeUndefined()
+    expect(res.speechContext).toBeUndefined()
   })
 })

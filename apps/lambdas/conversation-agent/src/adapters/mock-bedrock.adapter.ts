@@ -17,23 +17,24 @@ export class MockBedrockAdapter implements ConversationBedrockAdapter {
 
       let textResponse = 'This is a mock response because Bedrock is not available locally.'
 
-      // Determine what to return based on context strings that intent handlers actually pass
+      // Determine what to return based on context strings that intent handlers actually pass.
+      // Returns plain text — SSML is now generated centrally by enhanceForSpeech().
       if (userContext.includes('Incident Status:')) {
         // RecommendActionHandler context
         textResponse =
-          '<speak>I recommend you throttle the operational speed by 25% and schedule a bearing replacement for the next shift.</speak>'
+          'I recommend you throttle the operational speed by 25% and schedule a bearing replacement for the next shift.'
       } else if (userContext.includes('Z-Scores:')) {
         // ExplainRiskHandler context
         textResponse =
-          '<speak>The joint friction has steadily climbed past 2 standard deviations resulting in a warning threshold breach. It looks like bearing wear.</speak>'
+          'The joint friction has steadily climbed past 2 standard deviations resulting in a warning threshold breach. It looks like bearing wear.'
       } else if (userContext.includes('Elevated/Critical Assets Count:')) {
         // FleetOverviewHandler context
         textResponse =
-          '<speak>I am seeing alerts on 3 assets. R-17 is critical due to pressure seal degradation. R-50 and R-99 are showing elevated temperatures.</speak>'
+          'I am seeing alerts on 3 assets. R-17 is critical due to pressure seal degradation. R-50 and R-99 are showing elevated temperatures.'
       } else if (userContext.includes('Risk State:')) {
         // AssetStatusHandler context
         textResponse =
-          '<speak>The asset is showing <emphasis level="strong">critical</emphasis> anomalies in the pressure seals. You should investigate immediately.</speak>'
+          'The asset is showing critical anomalies in the pressure seals. You should investigate immediately.'
       }
 
       span.setAttribute('bedrock.prompt_tokens', 100)

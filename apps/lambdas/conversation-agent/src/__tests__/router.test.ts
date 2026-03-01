@@ -46,7 +46,8 @@ describe('IntentRouter', () => {
     })
     const res = await router.route(createEvent('AssetStatus'))
     expect(mockHandlers.assetStatus.handle).toHaveBeenCalled()
-    expect(res.messages?.[0]?.content).toBe('Success')
+    // messages[0] is SSML, messages[1] is PlainText
+    expect(res.messages?.[1]?.content).toBe('Success')
   })
 
   it('routes to FallbackHandler for unknown intents', async () => {
@@ -63,7 +64,7 @@ describe('IntentRouter', () => {
     const res = await router.route(createEvent('AssetStatus'))
 
     // Router should catch exception and return safe message instead of crashing
-    expect(res.messages?.[0]?.content).toContain('encountered an internal error')
+    expect(res.messages?.[1]?.content).toContain('encountered an internal error')
     expect(res.sessionState.intent.state).toBe('Fulfilled') // Lex state requires fulfillment or delegate
   })
 })

@@ -36,6 +36,11 @@ export class AcknowledgeIncidentHandler implements IntentHandler {
     return {
       intentName,
       message: `Got it. I've logged your acknowledgment for the ${incident.severity} incident on ${assetId}.`,
+      speechContext: {
+        severity: 'info',
+        intentName,
+        hasIncident: true,
+      },
     }
   }
 }

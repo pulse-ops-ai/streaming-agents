@@ -30,7 +30,7 @@ describe('AcknowledgeIncidentHandler', () => {
     expect(res.message).toContain('no active incident for R-17 to acknowledge')
   })
 
-  it('updates the incident record and returns confirmation', async () => {
+  it('updates the incident record and returns confirmation with speechContext', async () => {
     mockIncident.findActiveIncident.mockResolvedValueOnce({
       incident_id: 'inc-123',
       severity: 'critical',
@@ -41,5 +41,10 @@ describe('AcknowledgeIncidentHandler', () => {
 
     expect(mockIncident.acknowledgeIncident).toHaveBeenCalledWith('inc-123', expect.any(String))
     expect(res.message).toContain('logged your acknowledgment for the critical incident on R-17')
+    expect(res.speechContext).toEqual({
+      severity: 'info',
+      intentName: 'AcknowledgeIncident',
+      hasIncident: true,
+    })
   })
 })

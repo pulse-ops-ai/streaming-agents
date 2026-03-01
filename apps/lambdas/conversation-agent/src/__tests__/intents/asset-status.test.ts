@@ -37,17 +37,37 @@ describe('AssetStatusHandler', () => {
     expect(mockBedrock.generateResponse).not.toHaveBeenCalled()
   })
 
-  it('delegates elevated asset to Bedrock', async () => {
+  it('delegates elevated asset to Bedrock with warning speechContext', async () => {
     mockAdapter.getAssetState.mockResolvedValueOnce({
       risk_state: 'elevated',
       composite_risk: 0.8,
       last_values: {},
     })
-    mockBedrock.generateResponse.mockResolvedValueOnce('<speak>Temperature is high.</speak>')
+    mockBedrock.generateResponse.mockResolvedValueOnce('Temperature is high.')
 
     const res = await handler.handle(createEvent('R-17'))
     expect(mockBedrock.generateResponse).toHaveBeenCalled()
-    expect(res.ssml).toBe('<speak>Temperature is high.</speak>')
     expect(res.message).toBe('Temperature is high.')
+    expect(res.speechContext).toEqual({
+      severity: 'warning',
+      intentName: 'AssetStatus',
+      hasIncident: false,
+    })
+  })
+
+  it('delegates critical asset to Bedrock with critical speechContext', async () => {
+    mockAdapter.getAssetState.mockResolvedValueOnce({
+      risk_state: 'critical',
+      composite_risk: 0.95,
+      last_values: {},
+    })
+    mockBedrock.generateResponse.mockResolvedValueOnce('Pressure seal failure detected.')
+
+    const res = await handler.handle(createEvent('R-17'))
+    expect(res.speechContext).toEqual({
+      severity: 'critical',
+      intentName: 'AssetStatus',
+      hasIncident: false,
+    })
   })
 })

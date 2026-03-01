@@ -45,13 +45,16 @@ Active since: ${incident.opened_at}
 The user is asking for recommended actions to resolve an active anomaly on ${assetId}. Speak concisely like a helpful colleague. Use plain language, not technical jargon. Keep responses under 3 sentences.
 Based on the root cause and severity, recommend the specific next steps to the operator.`
 
-    const ssmlResponse = await this.bedrock.generateResponse(prompt, context)
-    const plainText = ssmlResponse.replace(/<[^>]+>/g, '').trim()
+    const message = await this.bedrock.generateResponse(prompt, context)
 
     return {
       intentName,
-      message: plainText,
-      ssml: ssmlResponse.startsWith('<speak>') ? ssmlResponse : `<speak>${ssmlResponse}</speak>`,
+      message,
+      speechContext: {
+        severity: incident.severity,
+        intentName,
+        hasIncident: true,
+      },
     }
   }
 }
