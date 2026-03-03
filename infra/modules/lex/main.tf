@@ -113,10 +113,9 @@ resource "aws_lexv2models_slot" "asset_status_asset_id" {
   slot_type_id = aws_lexv2models_slot_type.asset_id[0].slot_type_id
 
   value_elicitation_setting {
+    slot_constraint = "Required"
     prompt_specification {
-      allow_interrupt            = true
-      max_retries                = 2
-      message_selection_strategy = "Random"
+      max_retries = 2
       message_group {
         message {
           plain_text_message {
@@ -124,32 +123,7 @@ resource "aws_lexv2models_slot" "asset_status_asset_id" {
           }
         }
       }
-      prompt_attempts_specification {
-        allow_interrupt = true
-        map_block_key   = "Initial"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-      }
-      prompt_attempts_specification {
-        allow_interrupt = true
-        map_block_key   = "Retry1"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-      }
-      prompt_attempts_specification {
-        allow_interrupt = true
-        map_block_key   = "Retry2"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-      }
     }
-    slot_constraint = "Required"
   }
 }
 
@@ -202,10 +176,9 @@ resource "aws_lexv2models_slot" "explain_risk_asset_id" {
   slot_type_id = aws_lexv2models_slot_type.asset_id[0].slot_type_id
 
   value_elicitation_setting {
+    slot_constraint = "Required"
     prompt_specification {
-      allow_interrupt            = true
-      max_retries                = 2
-      message_selection_strategy = "Random"
+      max_retries = 2
       message_group {
         message {
           plain_text_message {
@@ -213,32 +186,7 @@ resource "aws_lexv2models_slot" "explain_risk_asset_id" {
           }
         }
       }
-      prompt_attempts_specification {
-        allow_interrupt = true
-        map_block_key   = "Initial"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-      }
-      prompt_attempts_specification {
-        allow_interrupt = true
-        map_block_key   = "Retry1"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-      }
-      prompt_attempts_specification {
-        allow_interrupt = true
-        map_block_key   = "Retry2"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-      }
     }
-    slot_constraint = "Required"
   }
 }
 
@@ -270,10 +218,9 @@ resource "aws_lexv2models_slot" "recommend_action_asset_id" {
   slot_type_id = aws_lexv2models_slot_type.asset_id[0].slot_type_id
 
   value_elicitation_setting {
+    slot_constraint = "Required"
     prompt_specification {
-      allow_interrupt            = true
-      max_retries                = 2
-      message_selection_strategy = "Random"
+      max_retries = 2
       message_group {
         message {
           plain_text_message {
@@ -281,32 +228,7 @@ resource "aws_lexv2models_slot" "recommend_action_asset_id" {
           }
         }
       }
-      prompt_attempts_specification {
-        allow_interrupt = true
-        map_block_key   = "Initial"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-      }
-      prompt_attempts_specification {
-        allow_interrupt = true
-        map_block_key   = "Retry1"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-      }
-      prompt_attempts_specification {
-        allow_interrupt = true
-        map_block_key   = "Retry2"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-      }
     }
-    slot_constraint = "Required"
   }
 }
 
@@ -338,10 +260,9 @@ resource "aws_lexv2models_slot" "acknowledge_incident_asset_id" {
   slot_type_id = aws_lexv2models_slot_type.asset_id[0].slot_type_id
 
   value_elicitation_setting {
+    slot_constraint = "Required"
     prompt_specification {
-      allow_interrupt            = true
-      max_retries                = 2
-      message_selection_strategy = "Random"
+      max_retries = 2
       message_group {
         message {
           plain_text_message {
@@ -349,32 +270,7 @@ resource "aws_lexv2models_slot" "acknowledge_incident_asset_id" {
           }
         }
       }
-      prompt_attempts_specification {
-        allow_interrupt = true
-        map_block_key   = "Initial"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-      }
-      prompt_attempts_specification {
-        allow_interrupt = true
-        map_block_key   = "Retry1"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-      }
-      prompt_attempts_specification {
-        allow_interrupt = true
-        map_block_key   = "Retry2"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-      }
     }
-    slot_constraint = "Required"
   }
 }
 
@@ -397,13 +293,6 @@ resource "aws_lexv2models_bot_version" "copilot_ver" {
     aws_lexv2models_intent.acknowledge_incident
   ]
 }
-
-# The AWS provider currently lacks native support for managing Lex V2 Bot Aliases easily
-# using standard terraform resources without complex CLI interactions. The AWS provider
-# currently documents `aws_lexv2models_bot` but lacks a complete V2 implementation for
-# bot aliases that includes code hook bindings natively inside TF.
-# As requested, we configure the base bot resources, allowing the user/console to finalize
-# adding the specific lambda alias if native v2 terraform resources are unavailable.
 
 output "bot_id" {
   value = var.enable_lex ? aws_lexv2models_bot.copilot[0].id : null
