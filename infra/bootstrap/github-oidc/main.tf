@@ -234,6 +234,7 @@ resource "aws_iam_policy" "dynamodb_management" {
           "dynamodb:CreateTable",
           "dynamodb:DeleteTable",
           "dynamodb:DescribeTable",
+          "dynamodb:DescribeContinuousBackups",
           "dynamodb:DescribeTimeToLive",
           "dynamodb:ListTables",
           "dynamodb:ListTagsOfResource",
@@ -373,7 +374,8 @@ resource "aws_iam_policy" "iam_management" {
           StringEquals = {
             "iam:PassedToService" = [
               "lambda.amazonaws.com",
-              "events.amazonaws.com"
+              "events.amazonaws.com",
+              "lexv2.amazonaws.com"
             ]
           }
         }
@@ -451,6 +453,61 @@ resource "aws_iam_policy" "s3_management" {
   })
 }
 
+resource "aws_iam_policy" "lex_management" {
+  name        = "streaming-agents-lex-management"
+  description = "Allows management of Lex V2 bots and related resources"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "LexBotManagement"
+        Effect = "Allow"
+        Action = [
+          "lex:CreateBot",
+          "lex:DeleteBot",
+          "lex:DescribeBot",
+          "lex:UpdateBot",
+          "lex:ListBots",
+          "lex:CreateBotLocale",
+          "lex:DeleteBotLocale",
+          "lex:DescribeBotLocale",
+          "lex:UpdateBotLocale",
+          "lex:BuildBotLocale",
+          "lex:CreateIntent",
+          "lex:DeleteIntent",
+          "lex:DescribeIntent",
+          "lex:UpdateIntent",
+          "lex:ListIntents",
+          "lex:CreateSlot",
+          "lex:DeleteSlot",
+          "lex:DescribeSlot",
+          "lex:UpdateSlot",
+          "lex:ListSlots",
+          "lex:CreateSlotType",
+          "lex:DeleteSlotType",
+          "lex:DescribeSlotType",
+          "lex:UpdateSlotType",
+          "lex:ListSlotTypes",
+          "lex:CreateBotVersion",
+          "lex:DeleteBotVersion",
+          "lex:DescribeBotVersion",
+          "lex:ListBotVersions",
+          "lex:CreateBotAlias",
+          "lex:DeleteBotAlias",
+          "lex:DescribeBotAlias",
+          "lex:UpdateBotAlias",
+          "lex:ListBotAliases",
+          "lex:TagResource",
+          "lex:UntagResource",
+          "lex:ListTagsForResource"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # ── Attach Policies to Roles ──────────────────────────────────────
 
 resource "aws_iam_role_policy_attachment" "github_deploy_state" {
@@ -514,4 +571,11 @@ resource "aws_iam_role_policy_attachment" "github_deploy_s3" {
 
   role       = aws_iam_role.github_deploy[each.key].name
   policy_arn = aws_iam_policy.s3_management.arn
+}
+
+resource "aws_iam_role_policy_attachment" "github_deploy_lex" {
+  for_each = toset(local.environments)
+
+  role       = aws_iam_role.github_deploy[each.key].name
+  policy_arn = aws_iam_policy.lex_management.arn
 }

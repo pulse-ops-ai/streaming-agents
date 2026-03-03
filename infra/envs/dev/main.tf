@@ -223,7 +223,6 @@ resource "aws_lambda_function" "simulator_controller" {
   environment {
     variables = {
       NODE_ENV             = var.environment
-      AWS_REGION           = var.aws_region
       WORKER_FUNCTION_NAME = "streaming-agents-simulator-worker"
       DEFAULT_SCENARIO     = "mixed"
       SIM_WORKER_COUNT     = "2"
@@ -278,7 +277,6 @@ resource "aws_lambda_function" "simulator_worker" {
   environment {
     variables = {
       NODE_ENV            = var.environment
-      AWS_REGION          = var.aws_region
       KINESIS_STREAM_NAME = module.r17_telemetry_stream.stream_name
       BATCH_SIZE          = "25"
       SIM_MAX_JITTER_MS   = "2000"
@@ -342,7 +340,6 @@ resource "aws_lambda_function" "ingestion_service" {
   environment {
     variables = {
       NODE_ENV              = var.environment
-      AWS_REGION            = var.aws_region
       KINESIS_INPUT_STREAM  = module.r17_telemetry_stream.stream_name
       KINESIS_OUTPUT_STREAM = module.r17_ingested_stream.stream_name
       DLQ_QUEUE_URL         = aws_sqs_queue.r17_telemetry_dlq.url
@@ -429,7 +426,6 @@ resource "aws_lambda_function" "signal_agent" {
   environment {
     variables = {
       NODE_ENV               = var.environment
-      AWS_REGION             = var.aws_region
       KINESIS_INPUT_STREAM   = module.r17_ingested_stream.stream_name
       KINESIS_OUTPUT_STREAM  = module.r17_risk_events_stream.stream_name
       DYNAMODB_TABLE         = module.asset_state_table.table_name
@@ -523,7 +519,6 @@ resource "aws_lambda_function" "diagnosis_agent" {
   environment {
     variables = {
       NODE_ENV              = var.environment
-      AWS_REGION            = var.aws_region
       KINESIS_INPUT_STREAM  = module.r17_risk_events_stream.stream_name
       KINESIS_OUTPUT_STREAM = module.r17_diagnosis_stream.stream_name
       DLQ_QUEUE_URL         = aws_sqs_queue.r17_diagnosis_dlq.url
@@ -617,7 +612,6 @@ resource "aws_lambda_function" "actions_agent" {
   environment {
     variables = {
       NODE_ENV                   = var.environment
-      AWS_REGION                 = var.aws_region
       KINESIS_INPUT_STREAM       = module.r17_diagnosis_stream.stream_name
       KINESIS_OUTPUT_STREAM      = module.r17_actions_stream.stream_name
       DLQ_QUEUE_URL              = aws_sqs_queue.r17_actions_dlq.url
@@ -715,7 +709,6 @@ resource "aws_lambda_function" "conversation_agent" {
   environment {
     variables = {
       NODE_ENV                 = var.environment
-      AWS_REGION               = var.aws_region
       DYNAMODB_ASSET_TABLE     = module.asset_state_table.table_name
       DYNAMODB_INCIDENTS_TABLE = module.incidents_table.table_name
       BEDROCK_MODEL_ID         = "anthropic.claude-sonnet-4-20250514"
