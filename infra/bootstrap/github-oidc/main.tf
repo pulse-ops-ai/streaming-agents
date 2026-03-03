@@ -161,9 +161,13 @@ resource "aws_iam_policy" "lambda_management" {
           "lambda:GetAlias",
           "lambda:TagResource",
           "lambda:UntagResource",
-          "lambda:ListTags"
+          "lambda:ListTags",
+          "lambda:GetFunctionCodeSigningConfig"
         ]
-        Resource = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:function:streaming-agents-*"
+        Resource = [
+          "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:function:streaming-agents-*",
+          "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:event-source-mapping:*"
+        ]
       },
       {
         Sid    = "LambdaEventSourceMapping"

@@ -66,10 +66,6 @@ resource "aws_lexv2models_slot_type" "asset_id" {
 
   value_selection_setting {
     resolution_strategy = "OriginalValue"
-
-    regex_filter {
-      pattern = "^R-\\d+$"
-    }
   }
 
   slot_type_values {
