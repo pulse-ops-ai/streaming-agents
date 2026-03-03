@@ -9,22 +9,34 @@ locals {
     Repository  = "pulse-ops-ai/streaming-agents"
   }
 
-  # When lambda_artifacts_path is set (CI), use real zips; otherwise fall back to placeholder
-  use_real_artifacts = var.lambda_artifacts_path != ""
+  # Lambda names that map to zip files produced by tools/bundle-lambda.ts
+  lambda_names = [
+    "simulator-controller",
+    "simulator-worker",
+    "ingestion",
+    "signal-agent",
+    "diagnosis-agent",
+    "actions-agent",
+    "conversation-agent",
+  ]
 
+  # Use real zip when artifacts path is set AND the file exists; otherwise placeholder
   lambda_zips = {
-    simulator-controller = local.use_real_artifacts ? "${var.lambda_artifacts_path}/simulator-controller.zip" : data.archive_file.lambda_placeholder.output_path
-    simulator-worker     = local.use_real_artifacts ? "${var.lambda_artifacts_path}/simulator-worker.zip" : data.archive_file.lambda_placeholder.output_path
-    ingestion            = local.use_real_artifacts ? "${var.lambda_artifacts_path}/ingestion.zip" : data.archive_file.lambda_placeholder.output_path
-    signal-agent         = local.use_real_artifacts ? "${var.lambda_artifacts_path}/signal-agent.zip" : data.archive_file.lambda_placeholder.output_path
-    diagnosis-agent      = local.use_real_artifacts ? "${var.lambda_artifacts_path}/diagnosis-agent.zip" : data.archive_file.lambda_placeholder.output_path
-    actions-agent        = local.use_real_artifacts ? "${var.lambda_artifacts_path}/actions-agent.zip" : data.archive_file.lambda_placeholder.output_path
-    conversation-agent   = local.use_real_artifacts ? "${var.lambda_artifacts_path}/conversation-agent.zip" : data.archive_file.lambda_placeholder.output_path
+    for name in local.lambda_names :
+    name => (
+      var.lambda_artifacts_path != "" && fileexists("${var.lambda_artifacts_path}/${name}.zip")
+      ? "${var.lambda_artifacts_path}/${name}.zip"
+      : data.archive_file.lambda_placeholder.output_path
+    )
   }
 
   lambda_hashes = {
-    for name, zip_path in local.lambda_zips :
-    name => local.use_real_artifacts ? filebase64sha256(zip_path) : data.archive_file.lambda_placeholder.output_base64sha256
+    for name in local.lambda_names :
+    name => (
+      var.lambda_artifacts_path != "" && fileexists("${var.lambda_artifacts_path}/${name}.zip")
+      ? filebase64sha256("${var.lambda_artifacts_path}/${name}.zip")
+      : data.archive_file.lambda_placeholder.output_base64sha256
+    )
   }
 }
 
