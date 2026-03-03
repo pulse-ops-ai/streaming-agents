@@ -114,8 +114,8 @@ resource "aws_lexv2models_slot" "asset_status_asset_id" {
 
   value_elicitation_setting {
     prompt_specification {
-      allow_interrupt           = true
-      max_retries               = 2
+      allow_interrupt            = true
+      max_retries                = 2
       message_selection_strategy = "Random"
       message_group {
         message {
@@ -131,8 +131,6 @@ resource "aws_lexv2models_slot" "asset_status_asset_id" {
           allow_audio_input = true
           allow_dtmf_input  = true
         }
-        audio_and_dtmf_input_specification {}
-        text_input_specification {}
       }
       prompt_attempts_specification {
         allow_interrupt = true
@@ -141,8 +139,6 @@ resource "aws_lexv2models_slot" "asset_status_asset_id" {
           allow_audio_input = true
           allow_dtmf_input  = true
         }
-        audio_and_dtmf_input_specification {}
-        text_input_specification {}
       }
       prompt_attempts_specification {
         allow_interrupt = true
@@ -151,8 +147,6 @@ resource "aws_lexv2models_slot" "asset_status_asset_id" {
           allow_audio_input = true
           allow_dtmf_input  = true
         }
-        audio_and_dtmf_input_specification {}
-        text_input_specification {}
       }
     }
     slot_constraint = "Required"
@@ -209,55 +203,13 @@ resource "aws_lexv2models_slot" "explain_risk_asset_id" {
 
   value_elicitation_setting {
     prompt_specification {
-      allow_interrupt          = true
-      max_retries              = 2
-      message_selection_strategy = "Random"
-      message_group {
-        message {
-          plain_text_message {
-            value = "Which robot do you need explained?"
-          }
-        }
-      }
-      prompt_attempts_specification {
-        allow_interrupt  = true
-        map_block_key    = "Initial"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-        audio_and_dtmf_input_specification {
-          audio_specification {}
-          dtmf_specification {}
-        }
-        text_input_specification {}
-      }
-      prompt_attempts_specification {
-        allow_interrupt  = true
-        map_block_key    = "Retry1"
-        allowed_input_types {
-          allow_audio_input = true
-          allow_dtmf_input  = true
-        }
-        audio_and_dtmf_input_specification {
-resource "aws_lexv2models_slot" "recommend_action_asset_id" {
-  count        = var.enable_lex ? 1 : 0
-  bot_id       = aws_lexv2models_bot.copilot[0].id
-  bot_version  = aws_lexv2models_bot_locale.en_us[0].bot_version
-  locale_id    = aws_lexv2models_bot_locale.en_us[0].locale_id
-  intent_id    = aws_lexv2models_intent.recommend_action[0].intent_id
-  name         = "asset_id"
-  slot_type_id = aws_lexv2models_slot_type.asset_id[0].slot_type_id
-
-  value_elicitation_setting {
-    prompt_specification {
       allow_interrupt            = true
       max_retries                = 2
       message_selection_strategy = "Random"
       message_group {
         message {
           plain_text_message {
-            value = "Which robot do you want recommendations for?"
+            value = "Which robot do you need explained?"
           }
         }
       }
@@ -268,8 +220,6 @@ resource "aws_lexv2models_slot" "recommend_action_asset_id" {
           allow_audio_input = true
           allow_dtmf_input  = true
         }
-        audio_and_dtmf_input_specification {}
-        text_input_specification {}
       }
       prompt_attempts_specification {
         allow_interrupt = true
@@ -278,8 +228,6 @@ resource "aws_lexv2models_slot" "recommend_action_asset_id" {
           allow_audio_input = true
           allow_dtmf_input  = true
         }
-        audio_and_dtmf_input_specification {}
-        text_input_specification {}
       }
       prompt_attempts_specification {
         allow_interrupt = true
@@ -288,13 +236,12 @@ resource "aws_lexv2models_slot" "recommend_action_asset_id" {
           allow_audio_input = true
           allow_dtmf_input  = true
         }
-        audio_and_dtmf_input_specification {}
-        text_input_specification {}
       }
     }
     slot_constraint = "Required"
   }
 }
+
 # 4. RecommendAction
 resource "aws_lexv2models_intent" "recommend_action" {
   count       = var.enable_lex ? 1 : 0
@@ -324,12 +271,38 @@ resource "aws_lexv2models_slot" "recommend_action_asset_id" {
 
   value_elicitation_setting {
     prompt_specification {
-      max_retries = 2
+      allow_interrupt            = true
+      max_retries                = 2
+      message_selection_strategy = "Random"
       message_group {
         message {
           plain_text_message {
             value = "Which robot do you want recommendations for?"
           }
+        }
+      }
+      prompt_attempts_specification {
+        allow_interrupt = true
+        map_block_key   = "Initial"
+        allowed_input_types {
+          allow_audio_input = true
+          allow_dtmf_input  = true
+        }
+      }
+      prompt_attempts_specification {
+        allow_interrupt = true
+        map_block_key   = "Retry1"
+        allowed_input_types {
+          allow_audio_input = true
+          allow_dtmf_input  = true
+        }
+      }
+      prompt_attempts_specification {
+        allow_interrupt = true
+        map_block_key   = "Retry2"
+        allowed_input_types {
+          allow_audio_input = true
+          allow_dtmf_input  = true
         }
       }
     }
@@ -383,8 +356,6 @@ resource "aws_lexv2models_slot" "acknowledge_incident_asset_id" {
           allow_audio_input = true
           allow_dtmf_input  = true
         }
-        audio_and_dtmf_input_specification {}
-        text_input_specification {}
       }
       prompt_attempts_specification {
         allow_interrupt = true
@@ -393,8 +364,6 @@ resource "aws_lexv2models_slot" "acknowledge_incident_asset_id" {
           allow_audio_input = true
           allow_dtmf_input  = true
         }
-        audio_and_dtmf_input_specification {}
-        text_input_specification {}
       }
       prompt_attempts_specification {
         allow_interrupt = true
@@ -403,8 +372,6 @@ resource "aws_lexv2models_slot" "acknowledge_incident_asset_id" {
           allow_audio_input = true
           allow_dtmf_input  = true
         }
-        audio_and_dtmf_input_specification {}
-        text_input_specification {}
       }
     }
     slot_constraint = "Required"
