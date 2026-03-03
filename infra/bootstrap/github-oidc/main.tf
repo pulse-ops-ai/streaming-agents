@@ -403,6 +403,54 @@ resource "aws_iam_policy" "secrets_manager_read" {
   })
 }
 
+resource "aws_iam_policy" "s3_management" {
+  name        = "streaming-agents-s3-management"
+  description = "Allows management of S3 buckets for Lambda artifacts and application data"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "S3BucketManagement"
+        Effect = "Allow"
+        Action = [
+          "s3:CreateBucket",
+          "s3:DeleteBucket",
+          "s3:ListBucket",
+          "s3:GetBucketLocation",
+          "s3:GetBucketVersioning",
+          "s3:PutBucketVersioning",
+          "s3:GetBucketPublicAccessBlock",
+          "s3:PutBucketPublicAccessBlock",
+          "s3:GetBucketTagging",
+          "s3:PutBucketTagging"
+        ]
+        Resource = "arn:aws:s3:::streaming-agents-*"
+      },
+      {
+        Sid    = "S3ObjectManagement"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListMultipartUploadParts",
+          "s3:AbortMultipartUpload"
+        ]
+        Resource = "arn:aws:s3:::streaming-agents-*/*"
+      },
+      {
+        Sid    = "S3ListAllBuckets"
+        Effect = "Allow"
+        Action = [
+          "s3:ListAllMyBuckets"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # ── Attach Policies to Roles ──────────────────────────────────────
 
 resource "aws_iam_role_policy_attachment" "github_deploy_state" {
@@ -459,4 +507,11 @@ resource "aws_iam_role_policy_attachment" "github_deploy_secrets" {
 
   role       = aws_iam_role.github_deploy[each.key].name
   policy_arn = aws_iam_policy.secrets_manager_read.arn
+}
+
+resource "aws_iam_role_policy_attachment" "github_deploy_s3" {
+  for_each = toset(local.environments)
+
+  role       = aws_iam_role.github_deploy[each.key].name
+  policy_arn = aws_iam_policy.s3_management.arn
 }

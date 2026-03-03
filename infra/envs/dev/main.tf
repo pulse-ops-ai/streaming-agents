@@ -8,6 +8,24 @@ locals {
     ManagedBy   = "terraform"
     Repository  = "pulse-ops-ai/streaming-agents"
   }
+
+  # When lambda_artifacts_path is set (CI), use real zips; otherwise fall back to placeholder
+  use_real_artifacts = var.lambda_artifacts_path != ""
+
+  lambda_zips = {
+    simulator-controller = local.use_real_artifacts ? "${var.lambda_artifacts_path}/simulator-controller.zip" : data.archive_file.lambda_placeholder.output_path
+    simulator-worker     = local.use_real_artifacts ? "${var.lambda_artifacts_path}/simulator-worker.zip" : data.archive_file.lambda_placeholder.output_path
+    ingestion            = local.use_real_artifacts ? "${var.lambda_artifacts_path}/ingestion.zip" : data.archive_file.lambda_placeholder.output_path
+    signal-agent         = local.use_real_artifacts ? "${var.lambda_artifacts_path}/signal-agent.zip" : data.archive_file.lambda_placeholder.output_path
+    diagnosis-agent      = local.use_real_artifacts ? "${var.lambda_artifacts_path}/diagnosis-agent.zip" : data.archive_file.lambda_placeholder.output_path
+    actions-agent        = local.use_real_artifacts ? "${var.lambda_artifacts_path}/actions-agent.zip" : data.archive_file.lambda_placeholder.output_path
+    conversation-agent   = local.use_real_artifacts ? "${var.lambda_artifacts_path}/conversation-agent.zip" : data.archive_file.lambda_placeholder.output_path
+  }
+
+  lambda_hashes = {
+    for name, zip_path in local.lambda_zips :
+    name => local.use_real_artifacts ? filebase64sha256(zip_path) : data.archive_file.lambda_placeholder.output_base64sha256
+  }
 }
 
 # ── DynamoDB Tables ───────────────────────────────────────────────
@@ -187,8 +205,8 @@ resource "aws_lambda_function" "simulator_controller" {
   timeout       = 30
   memory_size   = 256
 
-  filename         = data.archive_file.lambda_placeholder.output_path
-  source_code_hash = data.archive_file.lambda_placeholder.output_base64sha256
+  filename         = local.lambda_zips["simulator-controller"]
+  source_code_hash = local.lambda_hashes["simulator-controller"]
 
   environment {
     variables = {
@@ -242,8 +260,8 @@ resource "aws_lambda_function" "simulator_worker" {
   timeout       = 90
   memory_size   = 256
 
-  filename         = data.archive_file.lambda_placeholder.output_path
-  source_code_hash = data.archive_file.lambda_placeholder.output_base64sha256
+  filename         = local.lambda_zips["simulator-worker"]
+  source_code_hash = local.lambda_hashes["simulator-worker"]
 
   environment {
     variables = {
@@ -306,8 +324,8 @@ resource "aws_lambda_function" "ingestion_service" {
   timeout       = 60
   memory_size   = 256
 
-  filename         = data.archive_file.lambda_placeholder.output_path
-  source_code_hash = data.archive_file.lambda_placeholder.output_base64sha256
+  filename         = local.lambda_zips["ingestion"]
+  source_code_hash = local.lambda_hashes["ingestion"]
 
   environment {
     variables = {
@@ -393,8 +411,8 @@ resource "aws_lambda_function" "signal_agent" {
   timeout       = 60
   memory_size   = 256
 
-  filename         = data.archive_file.lambda_placeholder.output_path
-  source_code_hash = data.archive_file.lambda_placeholder.output_base64sha256
+  filename         = local.lambda_zips["signal-agent"]
+  source_code_hash = local.lambda_hashes["signal-agent"]
 
   environment {
     variables = {
@@ -487,8 +505,8 @@ resource "aws_lambda_function" "diagnosis_agent" {
   timeout       = 60
   memory_size   = 512
 
-  filename         = data.archive_file.lambda_placeholder.output_path
-  source_code_hash = data.archive_file.lambda_placeholder.output_base64sha256
+  filename         = local.lambda_zips["diagnosis-agent"]
+  source_code_hash = local.lambda_hashes["diagnosis-agent"]
 
   environment {
     variables = {
@@ -581,8 +599,8 @@ resource "aws_lambda_function" "actions_agent" {
   timeout       = 60
   memory_size   = 256
 
-  filename         = data.archive_file.lambda_placeholder.output_path
-  source_code_hash = data.archive_file.lambda_placeholder.output_base64sha256
+  filename         = local.lambda_zips["actions-agent"]
+  source_code_hash = local.lambda_hashes["actions-agent"]
 
   environment {
     variables = {
@@ -679,8 +697,8 @@ resource "aws_lambda_function" "conversation_agent" {
   timeout       = 30
   memory_size   = 512
 
-  filename         = data.archive_file.lambda_placeholder.output_path
-  source_code_hash = data.archive_file.lambda_placeholder.output_base64sha256
+  filename         = local.lambda_zips["conversation-agent"]
+  source_code_hash = local.lambda_hashes["conversation-agent"]
 
   environment {
     variables = {
