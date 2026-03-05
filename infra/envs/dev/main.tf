@@ -523,7 +523,7 @@ resource "aws_lambda_function" "diagnosis_agent" {
       KINESIS_OUTPUT_STREAM = module.r17_diagnosis_stream.stream_name
       DLQ_QUEUE_URL         = aws_sqs_queue.r17_diagnosis_dlq.url
       DYNAMODB_TABLE        = module.asset_state_table.table_name
-      BEDROCK_MODEL_ID      = "anthropic.claude-sonnet-4-20250514"
+      BEDROCK_MODEL_ID      = "anthropic.claude-sonnet-4-6"
       BEDROCK_REGION        = var.aws_region
       DIAGNOSIS_DEBOUNCE_MS = "30000"
       OTEL_SERVICE_NAME     = "diagnosis-agent"
@@ -711,7 +711,7 @@ resource "aws_lambda_function" "conversation_agent" {
       NODE_ENV                 = var.environment
       DYNAMODB_ASSET_TABLE     = module.asset_state_table.table_name
       DYNAMODB_INCIDENTS_TABLE = module.incidents_table.table_name
-      BEDROCK_MODEL_ID         = "anthropic.claude-sonnet-4-20250514"
+      BEDROCK_MODEL_ID         = "anthropic.claude-sonnet-4-6"
       BEDROCK_REGION           = var.aws_region
       OTEL_SERVICE_NAME        = "conversation-agent"
     }
