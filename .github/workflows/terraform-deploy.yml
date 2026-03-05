@@ -197,7 +197,7 @@ jobs:
         run: terraform apply -auto-approve
         working-directory: infra/envs/dev
         env:
-          TF_VAR_lambda_artifacts_path: ../../lambda-artifacts
+          TF_VAR_lambda_artifacts_path: ../../../lambda-artifacts
 
       - name: Tag Deployment
         run: |
@@ -253,7 +253,7 @@ jobs:
         run: terraform apply -auto-approve
         working-directory: infra/envs/staging
         env:
-          TF_VAR_lambda_artifacts_path: ../../lambda-artifacts
+          TF_VAR_lambda_artifacts_path: ../../../lambda-artifacts
 
       - name: Tag Deployment
         run: |
@@ -306,7 +306,7 @@ jobs:
         run: terraform apply -auto-approve
         working-directory: infra/envs/prod
         env:
-          TF_VAR_lambda_artifacts_path: ../../lambda-artifacts
+          TF_VAR_lambda_artifacts_path: ../../../lambda-artifacts
 
       - name: Tag Deployment
         run: |
