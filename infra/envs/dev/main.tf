@@ -70,6 +70,23 @@ module "incidents_table" {
     {
       name = "incident_id"
       type = "S"
+    },
+    {
+      name = "asset_id"
+      type = "S"
+    },
+    {
+      name = "status"
+      type = "S"
+    }
+  ]
+
+  global_secondary_indexes = [
+    {
+      name            = "asset_id-status-index"
+      hash_key        = "asset_id"
+      range_key       = "status"
+      projection_type = "ALL"
     }
   ]
 

@@ -38,7 +38,9 @@ Nominal Assets Count: ${assets.length - nonNominal.length}
 Elevated/Critical Assets Count: ${nonNominal.length}
 Non-nominal details:
 ${nonNominal
-  .map((a) => `- ${a.asset_id}: ${a.risk_state} risk (score: ${a.composite_risk.toFixed(2)})`)
+  .map(
+    (a) => `- ${a.asset_id}: ${a.risk_state} risk (score: ${(a.composite_risk ?? 0).toFixed(2)})`
+  )
   .join('\n')}
     `
 
