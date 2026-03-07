@@ -58,3 +58,23 @@ tasks:
     desc: Full teardown of local environment
     cmds:
       - bash scripts/teardown/teardown.sh
+
+  deploy:voice:
+      desc: Deploy reachy-voice to Pi
+      cmds:
+        - ssh pollen@reachy-mini.local 'rm -rf ~/reachy-voice/reachy_voice'
+        - scp -r python/services/reachy-voice/src/reachy_voice pollen@reachy-mini.local:~/reachy-voice/
+        - scp python/services/reachy-voice/pyproject.toml pollen@reachy-mini.local:~/reachy-voice/
+
+  deploy:exporter:
+    desc: Deploy reachy-exporter to Pi
+    cmds:
+      - ssh pollen@reachy-mini.local 'rm -rf ~/streaming-agents/src/reachy_exporter'
+      - scp -r python/services/reachy-exporter/src/reachy_exporter pollen@reachy-mini.local:~/streaming-agents/src/
+      - ssh pollen@reachy-mini.local 'sudo systemctl restart reachy-exporter'
+
+  deploy:pi:
+    desc: Deploy both services to Pi
+    cmds:
+      - task: deploy:exporter
+      - task: deploy:voice

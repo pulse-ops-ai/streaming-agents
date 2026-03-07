@@ -51,6 +51,7 @@ class VoiceLoop:
                 self._cycle()
         finally:
             self._feedback.close()
+            self._capture.close()
             self._player.close()
             logger.info("Voice terminal stopped")
 
@@ -60,6 +61,7 @@ class VoiceLoop:
             self._cycle()
         finally:
             self._feedback.close()
+            self._capture.close()
             self._player.close()
 
     def _cycle(self) -> None:
