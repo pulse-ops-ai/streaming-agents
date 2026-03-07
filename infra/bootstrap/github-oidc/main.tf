@@ -379,7 +379,8 @@ resource "aws_iam_policy" "iam_management" {
             "iam:PassedToService" = [
               "lambda.amazonaws.com",
               "events.amazonaws.com",
-              "lexv2.amazonaws.com"
+              "lexv2.amazonaws.com",
+              "grafana.amazonaws.com"
             ]
           }
         }
@@ -512,6 +513,87 @@ resource "aws_iam_policy" "lex_management" {
   })
 }
 
+resource "aws_iam_policy" "observability_management" {
+  name        = "streaming-agents-observability-management"
+  description = "Allows management of CloudWatch, Grafana, and Prometheus resources"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "CloudWatchManagement"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:GetDashboard",
+          "cloudwatch:PutDashboard",
+          "cloudwatch:DeleteDashboards",
+          "cloudwatch:ListDashboards",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:ListTagsForResource",
+          "cloudwatch:TagResource",
+          "cloudwatch:UntagResource"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "CloudWatchLogsManagement"
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:DeleteLogGroup",
+          "logs:DescribeLogGroups",
+          "logs:PutRetentionPolicy",
+          "logs:ListTagsForResource",
+          "logs:TagResource",
+          "logs:UntagResource"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "GrafanaManagement"
+        Effect = "Allow"
+        Action = [
+          "grafana:CreateWorkspace",
+          "grafana:DeleteWorkspace",
+          "grafana:DescribeWorkspace",
+          "grafana:UpdateWorkspace",
+          "grafana:ListWorkspaces",
+          "grafana:ListTagsForResource",
+          "grafana:TagResource",
+          "grafana:UntagResource"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "PrometheusManagement"
+        Effect = "Allow"
+        Action = [
+          "aps:CreateWorkspace",
+          "aps:DeleteWorkspace",
+          "aps:DescribeWorkspace",
+          "aps:UpdateWorkspaceAlias",
+          "aps:ListWorkspaces",
+          "aps:ListTagsForResource",
+          "aps:TagResource",
+          "aps:UntagResource"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "SSOReadOnly"
+        Effect = "Allow"
+        Action = [
+          "sso:DescribeRegisteredRegions",
+          "sso:ListInstances"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # ── Attach Policies to Roles ──────────────────────────────────────
 
 resource "aws_iam_role_policy_attachment" "github_deploy_state" {
@@ -582,4 +664,13 @@ resource "aws_iam_role_policy_attachment" "github_deploy_lex" {
 
   role       = aws_iam_role.github_deploy[each.key].name
   policy_arn = aws_iam_policy.lex_management.arn
+}
+
+resource "aws_iam_role_policy" "github_deploy_observability_inline" {
+  for_each = toset(local.environments)
+
+  name = "streaming-agents-observability"
+  role = aws_iam_role.github_deploy[each.key].id
+
+  policy = aws_iam_policy.observability_management.policy
 }
