@@ -29,6 +29,12 @@ resource "aws_lambda_function" "conversation_agent" {
   filename         = data.archive_file.lambda_placeholder.output_path
   source_code_hash = data.archive_file.lambda_placeholder.output_base64sha256
 
+  # AWS Distro for OpenTelemetry (ADOT) Layer for observability
+  # Note: Conversation agent uses different runtime pattern, ADOT may need custom config
+  # layers = [
+  #   "arn:aws:lambda:us-east-1:901920570463:layer:aws-otel-nodejs-amd64-ver-1-18-1:3"
+  # ]
+
   environment {
     variables = {
       NODE_ENV                 = "aws-sandbox"
@@ -38,7 +44,18 @@ resource "aws_lambda_function" "conversation_agent" {
       BEDROCK_MODEL_ID         = "anthropic.claude-sonnet-4-20250514"
       BEDROCK_REGION           = "us-east-1"
       OTEL_SERVICE_NAME        = "conversation-agent"
+      # ADOT configuration (uncomment when layer is enabled)
+      # AWS_LAMBDA_EXEC_WRAPPER  = "/opt/otel-handler"
+      # OTEL_EXPORTER_OTLP_ENDPOINT = aws_prometheus_workspace.metrics.prometheus_endpoint
+      # OTEL_TRACES_EXPORTER     = "otlp"
+      # OTEL_METRICS_EXPORTER    = "otlp"
+      # OTEL_RESOURCE_ATTRIBUTES = "service.name=conversation-agent"
     }
+  }
+
+  # Enable X-Ray tracing
+  tracing_config {
+    mode = "Active"
   }
 
   tags = {

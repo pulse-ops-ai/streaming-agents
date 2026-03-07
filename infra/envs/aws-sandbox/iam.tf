@@ -22,6 +22,27 @@ resource "aws_iam_role_policy_attachment" "conversation_agent_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# X-Ray tracing permissions
+resource "aws_iam_role_policy" "conversation_agent_xray" {
+  name = "streaming-agents-conversation-agent-xray"
+  role = aws_iam_role.conversation_agent.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "XRayTracing"
+        Effect = "Allow"
+        Action = [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy" "conversation_agent_dynamodb" {
   name = "streaming-agents-conversation-agent-dynamodb"
   role = aws_iam_role.conversation_agent.id

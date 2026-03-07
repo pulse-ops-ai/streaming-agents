@@ -1,0 +1,304 @@
+{
+  "dashboard": {
+    "title": "Fleet Overview - Streaming Agents",
+    "tags": ["streaming-agents", "fleet", "robotics"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-30m",
+      "to": "now"
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "asset_id",
+          "type": "query",
+          "label": "Asset ID",
+          "datasource": "AMP",
+          "query": "label_values(streaming_agents_signal_agent_risk_score, asset_id)",
+          "multi": false,
+          "includeAll": false,
+          "refresh": 1
+        },
+        {
+          "name": "risk_state",
+          "type": "custom",
+          "label": "Risk State",
+          "query": "nominal,elevated,critical",
+          "multi": true,
+          "includeAll": true,
+          "current": {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Fleet Risk Map",
+        "type": "table",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "datasource": "AMP",
+            "expr": "streaming_agents_signal_agent_risk_score",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "color-background"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 0.5, "color": "yellow" },
+                { "value": 0.75, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Risk Distribution",
+        "type": "piechart",
+        "gridPos": { "x": 12, "y": 0, "w": 6, "h": 8 },
+        "targets": [
+          {
+            "datasource": "AMP",
+            "expr": "count by (risk_state) (streaming_agents_signal_agent_risk_score)"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Active Incidents",
+        "type": "stat",
+        "gridPos": { "x": 18, "y": 0, "w": 6, "h": 8 },
+        "targets": [
+          {
+            "datasource": "CloudWatch",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "ItemCount",
+            "dimensions": {
+              "TableName": "streaming-agents-incidents"
+            },
+            "statistic": "Average"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 1, "color": "yellow" },
+                { "value": 5, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Composite Risk Over Time",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 8, "w": 16, "h": 8 },
+        "targets": [
+          {
+            "datasource": "AMP",
+            "expr": "streaming_agents_signal_agent_risk_score{asset_id=~\"$asset_id\"}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 10
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 0.5, "color": "yellow" },
+                { "value": 0.75, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Z-Scores (Selected Asset)",
+        "type": "timeseries",
+        "gridPos": { "x": 16, "y": 8, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "datasource": "AMP",
+            "expr": "streaming_agents_signal_agent_z_scores{asset_id=\"$asset_id\",metric=\"position_error_z\"}",
+            "legendFormat": "Position Error"
+          },
+          {
+            "datasource": "AMP",
+            "expr": "streaming_agents_signal_agent_z_scores{asset_id=\"$asset_id\",metric=\"accel_z\"}",
+            "legendFormat": "Acceleration"
+          },
+          {
+            "datasource": "AMP",
+            "expr": "streaming_agents_signal_agent_z_scores{asset_id=\"$asset_id\",metric=\"gyro_z\"}",
+            "legendFormat": "Gyroscope"
+          },
+          {
+            "datasource": "AMP",
+            "expr": "streaming_agents_signal_agent_z_scores{asset_id=\"$asset_id\",metric=\"temperature_z\"}",
+            "legendFormat": "Temperature"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Events Per Stage",
+        "type": "bargauge",
+        "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "datasource": "CloudWatch",
+            "namespace": "AWS/Lambda",
+            "metricName": "Invocations",
+            "dimensions": {
+              "FunctionName": "streaming-agents-conversation-agent"
+            },
+            "statistic": "Sum"
+          }
+        ],
+        "options": {
+          "orientation": "horizontal",
+          "displayMode": "gradient"
+        }
+      },
+      {
+        "id": 7,
+        "title": "Processing Latency (p50/p95/p99)",
+        "type": "timeseries",
+        "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "datasource": "CloudWatch",
+            "namespace": "AWS/Lambda",
+            "metricName": "Duration",
+            "dimensions": {
+              "FunctionName": "streaming-agents-conversation-agent"
+            },
+            "statistic": "p50",
+            "alias": "p50"
+          },
+          {
+            "datasource": "CloudWatch",
+            "namespace": "AWS/Lambda",
+            "metricName": "Duration",
+            "dimensions": {
+              "FunctionName": "streaming-agents-conversation-agent"
+            },
+            "statistic": "p95",
+            "alias": "p95"
+          },
+          {
+            "datasource": "CloudWatch",
+            "namespace": "AWS/Lambda",
+            "metricName": "Duration",
+            "dimensions": {
+              "FunctionName": "streaming-agents-conversation-agent"
+            },
+            "statistic": "p99",
+            "alias": "p99"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Lambda Errors",
+        "type": "bargauge",
+        "gridPos": { "x": 0, "y": 24, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "datasource": "CloudWatch",
+            "namespace": "AWS/Lambda",
+            "metricName": "Errors",
+            "dimensions": {
+              "FunctionName": "streaming-agents-conversation-agent"
+            },
+            "statistic": "Sum"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [{ "value": 0, "color": "green" }, { "value": 1, "color": "red" }]
+            }
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "DynamoDB Read/Write Capacity",
+        "type": "timeseries",
+        "gridPos": { "x": 8, "y": 24, "w": 16, "h": 6 },
+        "targets": [
+          {
+            "datasource": "CloudWatch",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "ConsumedReadCapacityUnits",
+            "dimensions": {
+              "TableName": "streaming-agents-asset-state"
+            },
+            "statistic": "Sum",
+            "alias": "Asset State Read"
+          },
+          {
+            "datasource": "CloudWatch",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "ConsumedWriteCapacityUnits",
+            "dimensions": {
+              "TableName": "streaming-agents-asset-state"
+            },
+            "statistic": "Sum",
+            "alias": "Asset State Write"
+          },
+          {
+            "datasource": "CloudWatch",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "ConsumedReadCapacityUnits",
+            "dimensions": {
+              "TableName": "streaming-agents-incidents"
+            },
+            "statistic": "Sum",
+            "alias": "Incidents Read"
+          },
+          {
+            "datasource": "CloudWatch",
+            "metricName": "ConsumedWriteCapacityUnits",
+            "dimensions": {
+              "TableName": "streaming-agents-incidents"
+            },
+            "statistic": "Sum",
+            "alias": "Incidents Write"
+          }
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}

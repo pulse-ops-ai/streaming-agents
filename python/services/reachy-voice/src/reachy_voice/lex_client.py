@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import gzip
 import json
 import logging
 from dataclasses import dataclass, field
@@ -32,14 +33,16 @@ class LexResponse:
 
 
 def _decode_field(value: str | None) -> object:
-    """Decode a base64-encoded JSON field from the Lex response."""
+    """Decode a base64-encoded (possibly gzip-compressed) JSON field from Lex."""
     if not value:
         return None
     try:
         raw = base64.b64decode(value)
+        # Lex may gzip-compress response fields (magic bytes 1f 8b)
+        if raw[:2] == b"\x1f\x8b":
+            raw = gzip.decompress(raw)
         return json.loads(raw)
     except Exception:
-        # Some fields may be plain strings
         try:
             return json.loads(value)
         except Exception:
