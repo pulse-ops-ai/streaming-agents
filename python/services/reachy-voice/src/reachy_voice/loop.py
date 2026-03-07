@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-import signal
+import threading
 
 from reachy_voice.audio_capture import AudioCapture
 from reachy_voice.audio_playback import AudioPlayer
@@ -25,6 +25,7 @@ class VoiceLoop:
         lex: LexVoiceClient,
         session: SessionManager,
         feedback: VisualFeedback,
+        stop_event: threading.Event,
         press_to_talk: bool = False,
     ) -> None:
         self._capture = capture
@@ -32,22 +33,15 @@ class VoiceLoop:
         self._lex = lex
         self._session = session
         self._feedback = feedback
+        self._stop_event = stop_event
         self._press_to_talk = press_to_talk
-        self._running = True
-
-        signal.signal(signal.SIGINT, self._handle_signal)
-        signal.signal(signal.SIGTERM, self._handle_signal)
-
-    def _handle_signal(self, signum: int, frame: object) -> None:
-        logger.info("Shutdown signal received")
-        self._running = False
 
     def run(self) -> None:
-        """Run continuous voice loop until interrupted."""
+        """Run continuous voice loop until stop_event is set."""
         mode_msg = "Press Enter to speak." if self._press_to_talk else "Listening..."
         logger.info("Voice terminal active. %s", mode_msg)
         try:
-            while self._running:
+            while not self._stop_event.is_set():
                 self._cycle()
         finally:
             self._feedback.close()
@@ -71,7 +65,7 @@ class VoiceLoop:
             try:
                 input("Press Enter to speak... ")
             except EOFError:
-                self._running = False
+                self._stop_event.set()
                 return
 
         # Listen
@@ -120,4 +114,4 @@ class VoiceLoop:
             logger.warning("No audio in response, text only: %s", response_text)
 
         if not response.transcript and not response.messages:
-            logger.warning("Lex returned empty response — mic may not have captured speech clearly")
+            logger.warning("Lex returned empty response -- mic may not have captured clearly")

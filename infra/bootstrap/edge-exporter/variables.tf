@@ -21,3 +21,9 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+variable "lex_bot_id" {
+  description = "Lex V2 bot ID for voice terminal"
+  type        = string
+  default     = "DQCBGQZ5XT"
+}

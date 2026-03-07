@@ -6,11 +6,11 @@ from reachy_voice.config import (
     LEX_LOCALE_ID,
     MAX_RECORD_S,
     MIN_RECORD_S,
-    REACHY_MEDIA_BACKEND,
     SAMPLE_RATE,
     SESSION_TIMEOUT_S,
     SILENCE_DURATION_S,
     SILENCE_THRESHOLD,
+    VOICE_MODE,
 )
 
 
@@ -35,5 +35,5 @@ def test_session_timeout():
     assert SESSION_TIMEOUT_S == 60.0
 
 
-def test_media_backend():
-    assert REACHY_MEDIA_BACKEND == "default"
+def test_voice_mode():
+    assert VOICE_MODE == "robot"

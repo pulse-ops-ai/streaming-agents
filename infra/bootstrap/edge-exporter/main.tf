@@ -1,6 +1,8 @@
 # Edge Exporter IAM User for Reachy Robot
 # This bootstrap configuration creates an IAM user with static credentials
-# for the Reachy Mini robot to publish telemetry to Kinesis.
+# for the Reachy Mini robot to:
+# 1. Publish telemetry to Kinesis (telemetry exporter)
+# 2. Interact with Lex bot for voice conversations (voice terminal)
 
 terraform {
   required_version = ">= 1.5.0"
@@ -60,6 +62,39 @@ resource "aws_iam_user_policy" "kinesis_write" {
           "kinesis:PutRecords"
         ]
         Resource = "arn:aws:kinesis:*:${data.aws_caller_identity.current.account_id}:stream/${var.stream_name}"
+      }
+    ]
+  })
+}
+
+# ── IAM Policy for Lex Bot Access ────────────────────────────────
+
+resource "aws_iam_user_policy" "lex_access" {
+  name = "lex-bot-access"
+  user = aws_iam_user.edge_exporter.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "LexRecognizeUtterance"
+        Effect = "Allow"
+        Action = [
+          "lex:RecognizeUtterance",
+          "lex:RecognizeText",
+          "lex:DeleteSession",
+          "lex:PutSession"
+        ]
+        Resource = [
+          "arn:aws:lex:${var.aws_region}:${data.aws_caller_identity.current.account_id}:bot-alias/${var.lex_bot_id}/*",
+          "arn:aws:lex:${var.aws_region}:${data.aws_caller_identity.current.account_id}:bot/${var.lex_bot_id}"
+        ]
+      },
+      {
+        Sid      = "PollySynthesize"
+        Effect   = "Allow"
+        Action   = ["polly:SynthesizeSpeech"]
+        Resource = "*"
       }
     ]
   })

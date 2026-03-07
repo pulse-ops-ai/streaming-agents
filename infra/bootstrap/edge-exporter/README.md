@@ -1,11 +1,17 @@
 # Edge Exporter IAM User Bootstrap
 
-This Terraform configuration creates an IAM user with static credentials for the Reachy Mini robot to publish telemetry to Kinesis.
+This Terraform configuration creates an IAM user with static credentials for the Reachy Mini robot to:
+1. Publish telemetry to Kinesis (reachy-exporter service)
+2. Interact with Lex bot for voice conversations (reachy-voice service)
+3. Synthesize speech via Polly (for voice responses)
 
 ## What This Creates
 
 1. **IAM User** - `streaming-agents-edge-exporter` with programmatic access only
-2. **IAM Policy** - Least-privilege inline policy for Kinesis PutRecord/PutRecords
+2. **IAM Policies** - Least-privilege inline policies for:
+   - Kinesis PutRecord/PutRecords (telemetry publishing)
+   - Lex RecognizeUtterance/RecognizeText/DeleteSession/PutSession (voice interaction)
+   - Polly SynthesizeSpeech (text-to-speech for voice responses)
 3. **Access Key** - Static credentials for the Raspberry Pi
 
 ## Prerequisites
@@ -14,6 +20,7 @@ This Terraform configuration creates an IAM user with static credentials for the
 - Administrative access to AWS account
 - Terraform >= 1.5.0
 - Kinesis stream `streaming-agents-r17-telemetry` must exist (created by main infrastructure)
+- Lex bot `DQCBGQZ5XT` must exist (created by main infrastructure)
 
 ## Usage
 
@@ -67,11 +74,34 @@ EOF
 Verify the exporter can write to Kinesis:
 
 ```bash
-# Test with AWS CLI
+# Test Kinesis access
 aws kinesis put-record \
   --stream-name streaming-agents-r17-telemetry \
   --partition-key test \
   --data "test-payload"
+```
+
+Verify the voice terminal can access Lex:
+
+```bash
+# Test Lex access
+aws lexv2-runtime recognize-text \
+  --bot-id DQCBGQZ5XT \
+  --bot-alias-id TSTALIASID \
+  --locale-id en_US \
+  --session-id test-session \
+  --text "hello"
+```
+
+Verify Polly access:
+
+```bash
+# Test Polly synthesis
+aws polly synthesize-speech \
+  --text "Hello from Reachy" \
+  --output-format mp3 \
+  --voice-id Joanna \
+  test-output.mp3
 ```
 
 ## Resources Created
@@ -81,10 +111,25 @@ aws kinesis put-record \
 - **Access**: Programmatic only (no console access)
 - **Tags**: Project, Service, Environment, ManagedBy
 
-### IAM Policy (Inline)
+### IAM Policies (Inline)
+
+#### Kinesis Telemetry Write
 - **Name**: `kinesis-telemetry-write`
 - **Permissions**: `kinesis:PutRecord`, `kinesis:PutRecords`
 - **Resource**: `arn:aws:kinesis:*:ACCOUNT_ID:stream/streaming-agents-r17-telemetry`
+
+#### Lex Bot Access
+- **Name**: `lex-bot-access`
+- **Permissions**:
+  - `lex:RecognizeUtterance` - Send audio to Lex
+  - `lex:RecognizeText` - Send text to Lex (laptop mode testing)
+  - `lex:DeleteSession` - Clear conversation state
+  - `lex:PutSession` - Manage conversation context
+  - `polly:SynthesizeSpeech` - Generate speech audio
+- **Resource**:
+  - `arn:aws:lex:REGION:ACCOUNT_ID:bot-alias/DQCBGQZ5XT/*` (all aliases)
+  - `arn:aws:lex:REGION:ACCOUNT_ID:bot/DQCBGQZ5XT` (bot itself)
+  - `*` (Polly - no resource-level restrictions)
 
 ### Access Key
 - **Status**: Active
@@ -93,10 +138,26 @@ aws kinesis put-record \
 ## Security Considerations
 
 ### Least Privilege
-The IAM policy grants only the minimum permissions needed:
+The IAM policies grant only the minimum permissions needed:
 - Write access to a single Kinesis stream
-- No read, delete, or management permissions
-- No access to other AWS services
+- Read/interact access to a specific Lex bot (DQCBGQZ5XT only)
+- Session management for conversation state
+- Polly synthesis for voice responses
+- No read, delete, or management permissions on any service
+- No access to other AWS services or resources
+
+### Lex Bot Access Scope
+The policy is scoped to the specific streaming-agents Lex bot (ID: `DQCBGQZ5XT`):
+- All bot aliases are accessible (allows dev/staging/prod aliases)
+- Session management permissions for conversation state
+- RecognizeText included for laptop mode testing
+
+If you need to change the bot ID:
+1. Update `terraform.tfvars`:
+   ```hcl
+   lex_bot_id = "NEW_BOT_ID"
+   ```
+2. Run `terraform apply` to update the policy
 
 ### Credential Rotation
 After the competition:
@@ -114,7 +175,7 @@ terraform destroy
 
 This will:
 1. Delete the access key
-2. Remove the IAM policy
+2. Remove the IAM policies (Kinesis and Lex)
 3. Delete the IAM user
 
 ## Outputs
@@ -123,14 +184,30 @@ This will:
 - `access_key_id` - Access key ID to set on the Pi
 - `secret_access_key` - Secret access key to set on the Pi (sensitive)
 - `stream_arn` - ARN of the Kinesis stream the user can write to
+- `lex_bot_arn` - ARN of the Lex bot the user can access
+- `credentials_note` - Reminder that credentials support both services
 
 ## Troubleshooting
 
 ### Access Denied Errors
-If the exporter gets access denied:
+If the exporter or voice terminal gets access denied:
 1. Verify the stream name matches: `streaming-agents-r17-telemetry`
 2. Check the stream exists: `aws kinesis describe-stream --stream-name streaming-agents-r17-telemetry`
-3. Verify credentials are set correctly on the Pi
+3. For Lex errors, verify the bot ID and alias ID match the policy (or use wildcards)
+4. Verify credentials are set correctly on the Pi
+
+### Lex Bot Not Found
+If the voice terminal can't find the Lex bot:
+1. Verify the bot is deployed: `aws lexv2-models describe-bot --bot-id DQCBGQZ5XT`
+2. Check the bot alias exists: `aws lexv2-models list-bot-aliases --bot-id DQCBGQZ5XT`
+3. Verify the region matches (`us-east-1` by default)
+4. Check the policy allows the specific bot ID
+
+### Polly Errors
+If Polly synthesis fails:
+1. Verify the voice ID is valid: `aws polly describe-voices --language-code en-US`
+2. Check output format is supported (mp3, ogg_vorbis, pcm)
+3. Ensure credentials are set correctly
 
 ### Credential Issues
 If credentials aren't working:
@@ -145,5 +222,8 @@ After applying this configuration:
 1. Note the access key ID and secret from outputs
 2. SSH to the Reachy Mini robot
 3. Configure AWS credentials using one of the methods above
-4. Test the connection with a sample PutRecord call
-5. Start the telemetry exporter service
+4. Test Kinesis: `aws kinesis put-record --stream-name streaming-agents-r17-telemetry --partition-key test --data test`
+5. Test Lex: `aws lexv2-runtime recognize-text --bot-id DQCBGQZ5XT --bot-alias-id TSTALIASID --locale-id en_US --session-id test --text hello`
+6. Test Polly: `aws polly synthesize-speech --text "test" --output-format mp3 --voice-id Joanna test.mp3`
+7. Start the reachy-exporter service
+8. Toggle reachy-voice On in the dashboard

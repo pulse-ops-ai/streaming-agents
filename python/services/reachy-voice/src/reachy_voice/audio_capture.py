@@ -1,4 +1,8 @@
-"""Microphone capture via Reachy Mini SDK with energy-based voice activity detection."""
+"""Microphone capture with energy-based voice activity detection.
+
+Robot mode: Reachy Mini SDK (float32 stereo 16kHz)
+Laptop mode: sounddevice (int16 mono 16kHz, converted to float32)
+"""
 
 from __future__ import annotations
 
@@ -9,6 +13,7 @@ import time
 import numpy as np
 
 from reachy_voice.config import (
+    CHUNK_DURATION_S,
     MAX_RECORD_S,
     MIN_RECORD_S,
     PRE_ROLL_CHUNKS,
@@ -29,20 +34,26 @@ def _rms(chunk: np.ndarray) -> float:
 
 
 def _to_pcm_int16(frames: list[np.ndarray]) -> bytes:
-    """Convert float32 stereo frames to int16 mono PCM bytes for Lex."""
+    """Convert float32 frames to int16 mono PCM bytes for Lex."""
     audio = np.concatenate(frames)
     mono = audio.mean(axis=1) if audio.ndim == 2 else audio
+    # Flatten in case shape is (n, 1)
+    mono = mono.ravel()
     int16 = np.clip(mono * 32767, -32768, 32767).astype(np.int16)
     return int16.tobytes()
 
 
 class AudioCapture:
-    """Records audio from microphone via the Reachy Mini SDK."""
+    """Records audio from microphone.
+
+    Args:
+        media: SDK media object for robot mode, or None for laptop mode (sounddevice).
+    """
 
     def __init__(
         self,
         *,
-        media: object,
+        media: object | None = None,
         silence_threshold: float = SILENCE_THRESHOLD,
         silence_duration_s: float = SILENCE_DURATION_S,
         max_record_s: float = MAX_RECORD_S,
@@ -53,8 +64,36 @@ class AudioCapture:
         self._silence_duration_s = silence_duration_s
         self._max_record_s = max_record_s
         self._min_record_s = min_record_s
-        self._media.start_recording()
-        logger.info("Audio capture started (SDK)")
+        self._stream: object | None = None
+        self._chunk_samples = int(SAMPLE_RATE * CHUNK_DURATION_S)
+
+        if not media:
+            import sounddevice as sd
+
+            self._stream = sd.InputStream(
+                samplerate=SAMPLE_RATE,
+                channels=1,
+                dtype="int16",
+                blocksize=self._chunk_samples,
+            )
+            self._stream.start()  # type: ignore[union-attr]
+            logger.info("Audio capture started (sounddevice)")
+        else:
+            logger.info("Audio capture ready (SDK)")
+
+    def _get_chunk(self) -> np.ndarray | None:
+        """Get one audio chunk as float32."""
+        if self._media:
+            chunk = self._media.get_audio_sample()  # type: ignore[union-attr]
+            if chunk is None or chunk.size == 0:
+                return None
+            return chunk  # float32 stereo (samples, 2)
+
+        chunk, overflowed = self._stream.read(self._chunk_samples)  # type: ignore[union-attr]
+        if overflowed:
+            logger.debug("Audio buffer overflow")
+        # int16 (samples, 1) -> float32
+        return chunk.astype(np.float32) / 32768.0
 
     def record_utterance(self) -> bytes | None:
         """Block until speech detected, record until silence, return PCM bytes.
@@ -71,8 +110,8 @@ class AudioCapture:
         logger.debug("Listening for speech (threshold=%.4f)...", self._silence_threshold)
 
         while True:
-            chunk = self._media.get_audio_sample()
-            if chunk is None or chunk.size == 0:
+            chunk = self._get_chunk()
+            if chunk is None:
                 continue
 
             energy = _rms(chunk)
@@ -106,7 +145,7 @@ class AudioCapture:
             return None
 
         audio = np.concatenate(frames)
-        duration = len(audio) / SAMPLE_RATE
+        duration = audio.shape[0] / SAMPLE_RATE
 
         if duration < self._min_record_s:
             logger.debug(
@@ -124,8 +163,8 @@ class AudioCapture:
         frames: list[np.ndarray] = []
         start = time.monotonic()
         while time.monotonic() - start < duration_s:
-            chunk = self._media.get_audio_sample()
-            if chunk is not None and chunk.size > 0:
+            chunk = self._get_chunk()
+            if chunk is not None:
                 frames.append(chunk)
         if not frames:
             return b""
@@ -134,8 +173,10 @@ class AudioCapture:
         return pcm
 
     def close(self) -> None:
-        """Stop SDK recording."""
-        try:
-            self._media.stop_recording()
-        except Exception:
-            logger.debug("stop_recording failed", exc_info=True)
+        """Close laptop-mode sounddevice stream (no-op in robot mode)."""
+        if self._stream:
+            try:
+                self._stream.close()  # type: ignore[union-attr]
+            except Exception:
+                logger.debug("stream close failed", exc_info=True)
+            self._stream = None

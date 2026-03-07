@@ -12,8 +12,8 @@ LEX_LOCALE_ID: str = os.environ.get("LEX_LOCALE_ID", "en_US")
 # AWS
 AWS_REGION: str = os.environ.get("AWS_REGION", "us-east-1")
 
-# Reachy Mini SDK
-REACHY_MEDIA_BACKEND: str = os.environ.get("REACHY_MEDIA_BACKEND", "default")
+# Voice mode: "robot" (daemon app) or "laptop" (standalone CLI)
+VOICE_MODE: str = os.environ.get("VOICE_MODE", "robot")
 
 # Voice Activity Detection (thresholds are float32 amplitude, range 0.0-1.0)
 SILENCE_THRESHOLD: float = float(os.environ.get("SILENCE_THRESHOLD", "0.015"))
@@ -24,15 +24,14 @@ MIN_RECORD_S: float = float(os.environ.get("MIN_RECORD_S", "0.5"))
 # Session
 SESSION_TIMEOUT_S: float = float(os.environ.get("SESSION_TIMEOUT_S", "60"))
 
-# Visual feedback (Reachy head movements)
+# Visual feedback
 ENABLE_VISUAL_FEEDBACK: bool = os.environ.get("ENABLE_VISUAL_FEEDBACK", "true").lower() in (
     "true",
     "1",
     "yes",
 )
-REACHY_HOST: str = os.environ.get("REACHY_HOST", "localhost")
-REACHY_PORT: int = int(os.environ.get("REACHY_PORT", "8000"))
 
 # Audio constants
 SAMPLE_RATE: int = 16000
-PRE_ROLL_CHUNKS: int = 3  # keep last 3 SDK chunks before speech starts
+CHUNK_DURATION_S: float = 0.1  # 100ms per chunk (laptop mode sounddevice blocksize)
+PRE_ROLL_CHUNKS: int = 3  # keep last 3 chunks before speech starts

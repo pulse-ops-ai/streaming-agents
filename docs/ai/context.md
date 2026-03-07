@@ -69,7 +69,7 @@ This file overrides chat history.
 - 6 Lambda functions + IAM roles + ESM mappings
 - Lambda bundler: `tools/bundle-lambda.ts` (esbuild, 6 functions)
 
-**Test Coverage:** 288 unit tests passing (across 13 packages)
+**Test Coverage:** 313 unit tests passing (across 14 packages)
 **E2E Validated:** Phase 2 pipeline on LocalStack — simulator → ingestion → signal-agent → DynamoDB + risk events
 
 ---
@@ -105,9 +105,16 @@ This file overrides chat history.
 - 7 Lambdas, 5 Kinesis streams, 2 DynamoDB tables, Lex V2, Bedrock
 - CI/CD: GitHub Actions (Lambda Build → S3 SHA-keyed → Terraform Deploy)
 
-**Task 5.2 — Edge Exporter on Real Robot** 🔄 Code complete
-- `python/services/reachy-exporter/` implementation complete with 34 tests
-- Hardware deployment to RPi5 pending
+**Task 5.2a — Edge Exporter on Real Robot** ✅
+- `python/services/reachy-exporter/` deployed to RPi5 as systemd service
+- Real telemetry flowing through full pipeline (Exporter → Kinesis → Ingestion → Signal Agent → DynamoDB)
+- R-17 asset state: nominal, composite_risk 0, 2000+ readings processed
+- IMU fields null (SDK not used by exporter, REST API only)
+
+**Task 5.2b — Voice Terminal on Real Robot** 🔄
+- `python/services/reachy-voice/` rewritten for Reachy Mini SDK audio (25 tests)
+- SDK WebSocket 403 blocking — daemon rejects `/ws/sdk` connections
+- Deployed to RPi5 at `~/reachy-voice/`
 
 **Task 5.3 — Grafana Dashboard** ⬜ PENDING
 
@@ -145,7 +152,8 @@ streaming-agents/
 │   ├── packages/
 │   │   └── streaming_agents_core/ # ✅ Pydantic models (v1 + v2)
 │   └── services/
-│       └── reachy-exporter/       # ✅ Complete (34 tests, hardware deploy pending)
+│       ├── reachy-exporter/       # ✅ Deployed to RPi5, 34 tests
+│       └── reachy-voice/          # 🔄 SDK audio rewrite, 25 tests
 ├── contracts/
 │   └── kinesis/                   # ⬜ JSON Schema per event type
 ├── infra/

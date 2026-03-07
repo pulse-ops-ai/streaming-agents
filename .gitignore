@@ -57,3 +57,5 @@ THIRD_PARTY_LICENSES
 aws/install
 aws/README.md
 test-full-degradation.json
+python/services/reachy-exporter/CODE_REVIEW.md
+python/services/reachy-voice/CODE_REVIEW.md

@@ -189,24 +189,43 @@ BaseLambdaHandler and NestJS bootstrap.
 - CI/CD: Lambda Build → S3 artifacts (SHA-keyed) → Terraform Deploy auto-trigger
 - Terraform artifact path fix: `../../../lambda-artifacts` (resolves from infra/envs/dev/)
 
-## Task 5.2 – Edge Exporter on Real Robot 🔄
+## Task 5.2a – Edge Exporter on Real Robot ✅
 **Depends on:** Task 5.1
-**Status:** Code complete (34 tests passing). Hardware deployment pending.
+**Status:** Complete. Deployed to Reachy Mini RPi5, real telemetry flowing through full pipeline.
 
 Completed:
-1. ✅ `python/services/reachy-exporter/` implementation complete
+1. ✅ `python/services/reachy-exporter/` implementation (34 tests)
    - `config.py` — env vars, J3_INDEX=3, ASSET_ID=R-17
    - `client.py` — async httpx client for `/api/state/full` + `/api/daemon/status`
    - `imu.py` — optional IMU reader with graceful fallback
    - `publisher.py` — Kinesis publisher with dry-run mode
    - `main.py` — 2 Hz polling loop, SIGINT/SIGTERM shutdown, control mode mapping (enabled→stiff, disabled→idle, gravity_compensation→compliant)
-   - 34 tests (config, client, imu, publisher, main)
-   - Ruff lint + format clean
+2. ✅ Deployed to RPi5 as systemd service (`reachy-exporter.service`)
+3. ✅ Real telemetry flowing: Exporter → Kinesis → Ingestion → Signal Agent → DynamoDB
+   - Fixed stale DynamoDB record (old schema) that caused signal-agent crash
+   - R-17 asset state: `risk_state: nominal`, `composite_risk: 0`, `reading_count: 2000+`
+4. ⬜ IMU data not yet available (reachy_mini SDK not imported by exporter, fields null)
+
+## Task 5.2b – Voice Terminal on Real Robot 🔄
+**Depends on:** Task 5.2a
+**Status:** Audio layer rewritten for Reachy Mini SDK. SDK WebSocket connection blocked by daemon (HTTP 403). Debugging SDK<->daemon compatibility.
+
+Completed:
+1. ✅ `python/services/reachy-voice/` implementation (25 tests)
+   - `config.py` — Lex bot IDs, VAD thresholds (float32 scale), REACHY_MEDIA_BACKEND
+   - `audio_capture.py` — SDK `get_audio_sample()` with energy-based VAD, float32→int16 PCM conversion
+   - `audio_playback.py` — MP3 decode via ffmpeg, float32 push to SDK `push_audio_sample()`
+   - `lex_client.py` — Lex V2 `recognize_utterance` with base64 JSON decoding
+   - `session.py` — UUID session management with monotonic timeout
+   - `feedback.py` — fire-and-forget head movements via REST API
+   - `loop.py` — listen→send→play cycle with press-to-talk mode
+   - `main.py` — CLI with --test-mic, --test-lex, --press-to-talk
+2. ✅ Deployed to RPi5 at `~/reachy-voice/` with venv
 
 Remaining:
-2. ⬜ Deploy to Reachy Mini RPi5, connect to live AWS Kinesis
-3. ⬜ Validate real sensor data flows through full pipeline
-4. ⬜ Capture video of R-17 moving while dashboard shows telemetry
+3. 🔄 Fix SDK WebSocket 403 — daemon (`--wireless-version`) rejecting `/ws/sdk` connections
+4. ⬜ Validate mic recording + Lex round-trip on real hardware
+5. ⬜ Test full voice loop: speak → Lex → conversation-agent → Polly → speaker
 
 ## Task 5.3 – Grafana Dashboard
 **Depends on:** Task 5.1
@@ -259,7 +278,7 @@ Post-submission (March 13–20):
 | Phase 2 – Pipeline | ✅ Complete | 105 | 4 Lambdas, 5 packages |
 | Phase 3 – AI Agents | ✅ Complete | 85 | 2 Lambdas (diagnosis, actions) |
 | Phase 4 – Voice | ✅ Complete | — | 1 Lambda (conversation-agent) + Lex V2 + Polly |
-| Phase 5 – Demo | 🔄 Active | 34 | reachy-exporter code complete, AWS deployed |
+| Phase 5 – Demo | 🔄 Active | 59 | reachy-exporter deployed, reachy-voice in progress, AWS deployed |
 
 **Deadline:** March 13, 2026 (article submission)
 **Buffer:** March 20, 2026 (community voting closes)
@@ -269,3 +288,5 @@ Post-submission (March 13–20):
 - **ExplainRisk / RecommendAction**: Return "no data" until simulator runs full pipeline and populates diagnosis/incident records
 - **Bedrock model activation**: First-time Sonnet 4.6 use required manual console activation (marketplace)
 - **Asset ID casing**: Python models updated from `r-17` → `R-17` to match TS pipeline. Verify consistency if re-seeding data.
+- **SDK WebSocket 403**: Reachy Mini daemon (`--wireless-version`) rejects SDK WebSocket connections at `/ws/sdk` with HTTP 403. Possibly single-client limit or wireless-version auth requirement. REST API (`/api/`) works fine.
+- **IMU data null**: Reachy exporter doesn't import the SDK (uses REST API only), so IMU fields are null. Could add optional SDK IMU access or parse from REST if exposed.
