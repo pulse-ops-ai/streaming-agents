@@ -29,7 +29,7 @@ class R17TelemetryEvent(BaseModel, extra="forbid"):
 
     schema_version: Literal["r17.telemetry.v1"]
     event_id: str = Field(min_length=1)
-    asset_id: Literal["r-17"]
+    asset_id: Literal["R-17"]
     timestamp: str = Field(description="ISO 8601 UTC timestamp")
     source: TelemetrySource
     sequence: int = Field(ge=0)
@@ -77,7 +77,7 @@ class R17RiskUpdate(BaseModel, extra="forbid"):
 
     schema_version: Literal["r17.risk_update.v1"]
     event_id: str = Field(min_length=1)
-    asset_id: Literal["r-17"]
+    asset_id: Literal["R-17"]
     timestamp: str = Field(description="ISO 8601 UTC timestamp")
     telemetry_event_id: str = Field(min_length=1)
     window_s: int = Field(gt=0)
@@ -127,7 +127,7 @@ class R17TelemetryV2Event(BaseModel, extra="forbid"):
 
     schema_version: Literal["r17.telemetry.v2"]
     event_id: str = Field(min_length=1)
-    asset_id: Literal["r-17"]
+    asset_id: Literal["R-17"]
     timestamp: str = Field(description="ISO 8601 UTC timestamp")
     source: TelemetrySourceV2
     sequence: int = Field(ge=0)

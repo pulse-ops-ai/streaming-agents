@@ -14,7 +14,7 @@ import httpx
 from ulid import ULID
 
 from reachy_exporter.client import fetch_daemon_status, fetch_joint_state
-from reachy_exporter.config import IMU_ENABLED, J3_INDEX, SAMPLING_HZ
+from reachy_exporter.config import ASSET_ID, IMU_ENABLED, J3_INDEX, SAMPLING_HZ
 from reachy_exporter.imu import IMUReader
 from reachy_exporter.publisher import Publisher
 from streaming_agents_core import ControlLoopStats, ControlMode, R17TelemetryV2Event
@@ -60,14 +60,18 @@ def _compute_position_error(
     return error_rad * (180.0 / math.pi)
 
 
+_REACHY_CONTROL_MODE_MAP: dict[str, ControlMode] = {
+    "enabled": ControlMode.stiff,
+    "disabled": ControlMode.idle,
+    "gravity_compensation": ControlMode.compliant,
+}
+
+
 def _resolve_control_mode(raw: str | None) -> ControlMode | None:
     if raw is None:
         return None
     normalized = raw.lower().strip()
-    try:
-        return ControlMode(normalized)
-    except ValueError:
-        return ControlMode.unknown
+    return _REACHY_CONTROL_MODE_MAP.get(normalized, ControlMode.unknown)
 
 
 async def _sample(
@@ -98,7 +102,7 @@ async def _sample(
     return R17TelemetryV2Event(
         schema_version="r17.telemetry.v2",
         event_id=str(ULID()),
-        asset_id="r-17",
+        asset_id=ASSET_ID,
         timestamp=datetime.now(UTC).isoformat(),
         source="reachy-exporter",
         sequence=sequence,

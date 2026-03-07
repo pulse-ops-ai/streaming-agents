@@ -60,11 +60,9 @@ async def fetch_daemon_status(client: httpx.AsyncClient) -> DaemonStatus:
     loop_stats = backend.get("control_loop_stats", {})
     error_code = data.get("error")
 
-    control_mode: str | None = None
-    for key in ("control_mode", "mode"):
-        if key in data:
-            control_mode = str(data[key])
-            break
+    control_mode = backend.get("motor_control_mode")
+    if control_mode is not None:
+        control_mode = str(control_mode)
 
     return DaemonStatus(
         control_mode=control_mode,

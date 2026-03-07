@@ -2,158 +2,188 @@
 
 ## Robotics Uptime Intelligence for Embodied AI
 
-Streaming Agents is a real-time predictive reliability copilot for autonomous robotic systems.
+Streaming Agents is a real-time predictive reliability copilot for autonomous robotic systems. It detects mechanical degradation through telemetry drift, creates explainable incidents, and lets operators query system state conversationally via voice.
 
-As embodied AI systems scale across warehouses, labs, and industrial environments, uptime becomes mission critical. Mechanical degradation does not happen instantly — it emerges gradually through subtle telemetry drift. Streaming Agents detects that drift early, creates explainable incidents, and allows operators to query system state conversationally.
-
-This is not a dashboard.
-This is streaming operational intelligence for robotics.
+**Live on AWS** | 7 Lambda functions | 5 Kinesis streams | Amazon Lex V2 + Bedrock (Claude Sonnet 4.6) | Full CI/CD via GitHub Actions
 
 ---
 
-# The Operational Problem
+## Architecture
 
-Autonomous robotic systems introduce a new reliability challenge:
+```
+Telemetry Source (Simulator / Reachy Mini)
+    |
+    v
+Kinesis: r17-telemetry
+    |
+    v
+Ingestion Lambda ──> Kinesis: r17-ingested
+                          |
+                          v
+                    Signal Agent Lambda ──> DynamoDB: asset-state
+                          |                     + Kinesis: r17-risk-events
+                          v
+                    Diagnosis Agent Lambda (Bedrock) ──> Kinesis: r17-diagnosis
+                          |
+                          v
+                    Actions Agent Lambda ──> DynamoDB: incidents
+                          |                     + Kinesis: r17-actions
+                          v
+                    Lex V2 Bot ──> Conversation Agent Lambda (Bedrock)
+                                        |
+                                        v
+                                   SSML / Polly Voice Output
+```
 
-- Servo torque increases before mechanical failure
-- Motor temperature rises gradually under stress
-- Joint position error drifts over time
-- Traditional monitoring creates alert fatigue
-- Root cause analysis is slow and manual
+### Agents
 
-Robotics teams need proactive reliability intelligence — not more alerts.
+| Agent | Role | Backing |
+|-------|------|---------|
+| **Signal Agent** | Computes deterministic composite risk scores from telemetry z-scores | Pure math (EMA, z-score, weighted formula) |
+| **Diagnosis Agent** | Generates structured reasoning capsules explaining *why* risk increased | Bedrock (Claude Sonnet 4.6) |
+| **Actions Agent** | Creates/manages incidents with cooldown and deduplication | Deterministic rules matrix |
+| **Conversation Agent** | Voice-ready natural language responses via Lex V2 fulfillment | Bedrock (Claude Sonnet 4.6) + SSML |
 
----
-
-# The System
-
-Streaming Agents is composed of four cooperating agents:
-
-### 1️⃣ Signal Agent
-Consumes telemetry streams and computes deterministic composite risk scores.
-
-### 2️⃣ Diagnosis Agent
-Generates structured reasoning capsules explaining *why* risk increased.
-
-### 3️⃣ Actions Agent
-Creates and manages incidents with cooldown and deduplication logic.
-
-### 4️⃣ Conversation Agent
-Provides structured, voice-ready explanations powered by an LLM — without delegating core reasoning to it.
-
-Risk scoring is deterministic.
-LLMs enhance explanation — they do not invent reasoning.
-
----
-
-# Telemetry Model (MVP — Locked)
-
-Prototype Asset: **Robotic Unit R-17** (Reachy-Mini)
-
-Signals:
-
-- `joint_3_torque_nm`
-- `joint_3_temperature_c`
-- `motor_current_amp`
-- `joint_position_error_deg`
-- `error_code`
-
-Failure Scenario:
-
-Gradual gear wear in Joint 3 leads to:
-
-- Sustained torque increase
-- Rising motor temperature
-- Intermittent position error spikes
-- Composite risk crossing threshold
-- Automated incident creation
+Risk scoring is deterministic. LLMs enhance explanation -- they do not invent reasoning.
 
 ---
 
-# Architecture Overview
+## Project Structure
 
-Telemetry → Kinesis → Signal Agent → DynamoDB
-→ Diagnosis Agent → Actions Agent
-→ Conversation Agent → Voice Interface
-
-Deployment Modes:
-
-- **LocalStack Mode** (local-first development)
-- **AWS Sandbox Mode** (Bedrock + optional Lex/Polly)
-
-The architecture is streaming-first and phase-disciplined.
+```
+streaming-agents/
+  apps/lambdas/
+    simulator-controller/    # EventBridge-triggered, fans out to workers
+    simulator-worker/        # Generates telemetry per scenario
+    ingestion/               # Validates, enriches, fans out to ingested stream
+    signal-agent/            # Z-score + composite risk computation
+    diagnosis-agent/         # Bedrock-powered root cause analysis
+    actions-agent/           # Incident lifecycle management
+    conversation-agent/      # Lex V2 fulfillment with 5 intents
+  packages/
+    core-contracts/          # Zod-validated event schemas and types
+    core-config/             # Environment variable loading
+    core-kinesis/            # Producer/consumer/DLQ wrappers
+    core-telemetry/          # OTel SDK wrapper + structured logging
+    lambda-base/             # BaseLambdaHandler + NestJS bootstrap
+  infra/
+    bootstrap/               # OIDC roles, S3/DynamoDB for Terraform state
+    modules/                 # Reusable Terraform modules (kinesis, dynamodb, lex)
+    envs/dev/                # Dev environment (AWS sandbox)
+    envs/localstack/         # Local development
+  python/services/
+    reachy-exporter/         # Edge telemetry exporter for Reachy Mini
+  docs/                      # Architecture, domain, API, and infra docs
+  .github/workflows/        # Lambda Build + Terraform Deploy pipelines
+```
 
 ---
 
-# Demo Narrative
+## AWS Resources (Dev)
 
-1. Start telemetry stream
-2. Inject deterministic degradation
-3. Risk score rises past threshold
-4. Incident automatically created
-5. User asks:
-   - “What is failing?”
-   - “Why?”
-   - “What should we do next?”
-6. Copilot responds with structured explanation and confidence score
-
-This entire flow runs in under 3 minutes.
+| Service | Resources |
+|---------|-----------|
+| Lambda | 7 functions (Node.js 22, 256-512MB) |
+| Kinesis | 5 streams (r17-telemetry, r17-ingested, r17-risk-events, r17-diagnosis, r17-actions) |
+| DynamoDB | 2 tables (asset-state, incidents with GSI) |
+| SQS | 4 dead-letter queues |
+| Lex V2 | 1 bot, 5 intents (AssetStatus, FleetOverview, ExplainRisk, RecommendAction, AcknowledgeIncident) |
+| Bedrock | Claude Sonnet 4.6 via US inference profile |
+| EventBridge | Simulator cron (rate-based, disabled by default) |
+| S3 | Lambda artifact storage + Terraform state |
 
 ---
 
-# Phase Roadmap
+## CI/CD
+
+Two GitHub Actions workflows:
+
+1. **Lambda Build** -- Builds TypeScript + Python Lambdas, runs tests, uploads zips to S3
+2. **Terraform Deploy** -- Auto-triggered after Lambda Build; downloads artifacts from S3, runs `terraform apply`
+
+Artifacts are keyed by commit SHA in S3 for traceability.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 22+
+- pnpm 9+
+- uv (Python package manager)
+- Terraform 1.9+
+- Docker (for LocalStack)
+
+### Local Development
+
+```bash
+# Install dependencies
+pnpm install
+cd python && uv sync && cd ..
+
+# Start LocalStack
+docker compose up -d
+
+# Apply Terraform
+cd infra/envs/localstack && terraform init && terraform apply
+
+# Build all packages
+pnpm build
+
+# Run tests
+pnpm test
+```
+
+### AWS Deployment
+
+Handled automatically via CI/CD on push to `main`. Manual trigger available via GitHub Actions `workflow_dispatch`.
+
+---
+
+## Lex V2 Intents
+
+| Intent | Example Utterance | Requires Bedrock |
+|--------|-------------------|-----------------|
+| AssetStatus | "What is the status of R-17?" | Yes |
+| FleetOverview | "How are the robots?" | Yes |
+| ExplainRisk | "Why is R-17 critical?" | Yes |
+| RecommendAction | "What should I do about R-17?" | Yes (when incident exists) |
+| AcknowledgeIncident | "Acknowledge R-17" | No |
+
+---
+
+## Risk Scoring Formula (Locked)
+
+```
+composite_risk = (0.35 * |pos_z|) + (0.25 * |accel_z|) + (0.15 * |gyro_z|)
+               + (0.15 * |temp_z|) + (0.10 * threshold_breach)
+
+Normalized: / 3.0, clamped [0, 1]
+
+States: nominal (<0.50) | elevated (0.50-0.75) | critical (>=0.75)
+```
+
+---
+
+## Phase Status
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| 0 | Architecture Lock | ✅ Complete |
-| 1 | Repository & Tooling Foundation | 🔄 In Progress |
-| 2 | Streaming Telemetry Pipeline | ⏳ Pending |
-| 3 | Incident & Explainability Layer | ⏳ Pending |
-| 4 | Conversational Copilot | ⏳ Pending |
-| 5 | Demo & Polish | ⏳ Pending |
+| 1 | Repository & Tooling Foundation | Complete |
+| 2 | Streaming Telemetry Pipeline | Complete (105 tests) |
+| 3 | Diagnosis & Actions Agents | Complete (85 tests) |
+| 4 | Conversational Copilot | Complete (Lex + Bedrock live on AWS) |
+| 5 | Demo, Article & Deployment | In Progress |
 
-Detailed execution discipline lives in:
-
-`docs/ai/context.md`
+**Deadline:** March 13, 2026 (AIdeas Builder Center article submission)
 
 ---
 
-# Running Locally
-
-1. Install dependencies
-   `pnpm install`
-
-2. Setup Python workspace
-   `cd python && uv sync`
-
-3. Start LocalStack
-
-4. Apply Terraform
-   `cd infra/envs/localstack && terraform init && terraform apply`
-
-5. Start services
-   `pnpm dev`
-
----
-
-# Guardrails
-
-To preserve architectural integrity:
+## Guardrails
 
 - Risk scoring must remain deterministic
-- LLM must not generate reasoning logic
+- LLMs enhance explanation -- they do not generate reasoning logic
 - No computer vision pipelines
 - No robotics autonomy modeling
-- Strict phase discipline enforced via `docs/ai/context.md`
-
----
-
-# Why This Matters
-
-As robotics adoption accelerates, uptime becomes a workforce productivity multiplier.
-
-Streaming Agents demonstrates how streaming analytics, deterministic risk modeling, and conversational AI can transform robotic maintenance from reactive troubleshooting into proactive intelligence.
-
----
-
-This repository contains both the production architecture and the documentation required to support the AIdeas competition submission.
+- Strict phase discipline enforced via `docs/ai/tasks.md`
