@@ -223,6 +223,13 @@ resource "aws_lexv2models_intent" "fleet_overview" {
   sample_utterance { utterance = "How the fleet doing" }
   sample_utterance { utterance = "Give me a fleet overview" }
   sample_utterance { utterance = "Fleet overview" }
+  sample_utterance { utterance = "What does the fleet look like" }
+  sample_utterance { utterance = "How does the fleet look" }
+  sample_utterance { utterance = "Fleet report" }
+  sample_utterance { utterance = "Tell me about the fleet" }
+  sample_utterance { utterance = "How are all the robots doing" }
+  sample_utterance { utterance = "Check the fleet" }
+  sample_utterance { utterance = "Whats going on with the fleet" }
 
   fulfillment_code_hook {
     enabled = true
