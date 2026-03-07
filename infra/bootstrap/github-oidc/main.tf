@@ -560,6 +560,8 @@ resource "aws_iam_policy" "observability_management" {
           "grafana:DescribeWorkspace",
           "grafana:UpdateWorkspace",
           "grafana:ListWorkspaces",
+          "grafana:DescribeWorkspaceConfiguration",
+          "grafana:UpdateWorkspaceConfiguration",
           "grafana:ListTagsForResource",
           "grafana:TagResource",
           "grafana:UntagResource"
@@ -575,6 +577,10 @@ resource "aws_iam_policy" "observability_management" {
           "aps:DescribeWorkspace",
           "aps:UpdateWorkspaceAlias",
           "aps:ListWorkspaces",
+          "aps:DescribeLoggingConfiguration",
+          "aps:CreateLoggingConfiguration",
+          "aps:UpdateLoggingConfiguration",
+          "aps:DeleteLoggingConfiguration",
           "aps:ListTagsForResource",
           "aps:TagResource",
           "aps:UntagResource"
