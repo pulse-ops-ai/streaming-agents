@@ -25,18 +25,23 @@ function formatNumbers(text: string): string {
   return text.replace(/\b(\d+\.\d+)\b/g, '<say-as interpret-as="number">$1</say-as>')
 }
 
-/** Wraps the first sentence with emphasis and inserts a break after it. */
+/**
+ * Wraps the first sentence with prosody-based emphasis and inserts a break after it.
+ * Uses <prosody> instead of <emphasis> because Polly neural voices don't support <emphasis>.
+ */
 function applyEmphasis(text: string, level: 'strong' | 'moderate', breakMs: number): string {
+  const prosodyAttrs = level === 'strong' ? 'volume="loud" rate="95%"' : 'rate="98%"'
+
   // Find the first sentence boundary (period, exclamation, or question mark followed by space or end)
   const match = text.match(/^(.*?[.!?])(\s|$)/)
   if (!match) {
     // No sentence boundary found — wrap the entire text
-    return `<emphasis level="${level}">${text}</emphasis><break time="${breakMs}ms"/>`
+    return `<prosody ${prosodyAttrs}>${text}</prosody><break time="${breakMs}ms"/>`
   }
 
   const firstSentence = match[1]
   const rest = text.slice(match[0].length)
-  const emphasized = `<emphasis level="${level}">${firstSentence}</emphasis><break time="${breakMs}ms"/>`
+  const emphasized = `<prosody ${prosodyAttrs}>${firstSentence}</prosody><break time="${breakMs}ms"/>`
 
   return rest.length > 0 ? `${emphasized} ${rest}` : emphasized
 }

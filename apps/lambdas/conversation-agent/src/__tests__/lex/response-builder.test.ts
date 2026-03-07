@@ -41,7 +41,7 @@ describe('Lex V2 Response Builder', () => {
     })
 
     const ssml = response.messages?.[0]?.content ?? ''
-    expect(ssml).toContain('<emphasis level="strong">')
+    expect(ssml).toContain('<prosody volume="loud" rate="95%">')
     expect(ssml).toContain('<break time="400ms"/>')
   })
 

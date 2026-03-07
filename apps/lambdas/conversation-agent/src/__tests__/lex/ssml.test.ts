@@ -43,26 +43,26 @@ describe('enhanceForSpeech', () => {
     expect(result).not.toContain('<break')
   })
 
-  it('applies moderate emphasis and 200ms break for warning severity', () => {
+  it('applies prosody-based emphasis and 200ms break for warning severity', () => {
     const result = enhanceForSpeech(
       'Temperature is elevated. Check the cooling system.',
       warningCtx
     )
-    expect(result).toContain('<emphasis level="moderate">')
-    expect(result).toContain('</emphasis>')
+    expect(result).toContain('<prosody rate="98%">')
+    expect(result).toContain('</prosody>')
     expect(result).toContain('<break time="200ms"/>')
     expect(result).toContain('Check the cooling system.')
     expect(result).toMatch(/^<speak>/)
     expect(result).toMatch(/<\/speak>$/)
   })
 
-  it('applies strong emphasis and 400ms break for critical severity', () => {
+  it('applies loud prosody and 400ms break for critical severity', () => {
     const result = enhanceForSpeech(
       'Pressure seal failure detected. Shutdown recommended.',
       criticalCtx
     )
-    expect(result).toContain('<emphasis level="strong">')
-    expect(result).toContain('</emphasis>')
+    expect(result).toContain('<prosody volume="loud" rate="95%">')
+    expect(result).toContain('</prosody>')
     expect(result).toContain('<break time="400ms"/>')
     expect(result).toContain('Shutdown recommended.')
     expect(result).toMatch(/^<speak>/)
@@ -111,13 +111,15 @@ describe('enhanceForSpeech', () => {
     )
     expect(result).toContain('<say-as interpret-as="characters">R</say-as> 17')
     expect(result).toContain('<say-as interpret-as="number">0.95</say-as>')
-    expect(result).toContain('<emphasis level="strong">')
+    expect(result).toContain('<prosody volume="loud" rate="95%">')
     expect(result).toContain('<break time="400ms"/>')
   })
 
-  it('handles single sentence with emphasis correctly', () => {
+  it('handles single sentence with prosody emphasis correctly', () => {
     const result = enhanceForSpeech('Critical failure detected.', criticalCtx)
-    expect(result).toContain('<emphasis level="strong">Critical failure detected.</emphasis>')
+    expect(result).toContain(
+      '<prosody volume="loud" rate="95%">Critical failure detected.</prosody>'
+    )
     expect(result).toContain('<break time="400ms"/>')
   })
 })
