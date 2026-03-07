@@ -2,10 +2,11 @@
 # Dashboard for visualizing metrics, traces, and logs
 
 resource "aws_grafana_workspace" "dashboard" {
-  name                     = "streaming-agents-dashboard"
+  name                     = "streaming-agents-dashboard-${var.environment}"
   account_access_type      = "CURRENT_ACCOUNT"
   authentication_providers = ["AWS_SSO"]
   permission_type          = "SERVICE_MANAGED"
+  role_arn                 = aws_iam_role.grafana.arn
 
   data_sources = [
     "PROMETHEUS",
@@ -13,20 +14,17 @@ resource "aws_grafana_workspace" "dashboard" {
     "XRAY"
   ]
 
-  # Notification channels not needed for demo
   notification_destinations = []
 
-  tags = {
-    Name        = "streaming-agents-dashboard"
-    Environment = "aws-sandbox"
-    Project     = "streaming-agents"
-    Purpose     = "observability-dashboard"
-  }
+  tags = merge(local.common_tags, {
+    Name    = "streaming-agents-dashboard-${var.environment}"
+    Purpose = "observability-dashboard"
+  })
 }
 
 # IAM role for Grafana to query data sources
 resource "aws_iam_role" "grafana" {
-  name = "streaming-agents-grafana-role"
+  name = "streaming-agents-grafana-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -41,11 +39,9 @@ resource "aws_iam_role" "grafana" {
     ]
   })
 
-  tags = {
-    Name        = "streaming-agents-grafana-role"
-    Environment = "aws-sandbox"
-    Project     = "streaming-agents"
-  }
+  tags = merge(local.common_tags, {
+    Name = "streaming-agents-grafana-role-${var.environment}"
+  })
 }
 
 # Prometheus query permissions
@@ -56,6 +52,15 @@ resource "aws_iam_role_policy" "grafana_prometheus" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
+      {
+        Sid    = "PrometheusDiscovery"
+        Effect = "Allow"
+        Action = [
+          "aps:ListWorkspaces",
+          "aps:DescribeWorkspace"
+        ]
+        Resource = "*"
+      },
       {
         Sid    = "PrometheusQuery"
         Effect = "Allow"
@@ -130,12 +135,14 @@ resource "aws_iam_role_policy" "grafana_xray" {
   })
 }
 
-# Associate Grafana workspace with IAM role
-resource "aws_grafana_role_association" "admin" {
-  role         = "ADMIN"
-  workspace_id = aws_grafana_workspace.dashboard.id
-
-  # Note: user_ids must be manually added after workspace creation
-  # This requires IAM Identity Center to be configured
-  # user_ids = ["<SSO_USER_ID>"]
-}
+# Admin role association — add SSO user after deploy:
+#   aws grafana create-workspace-service-account \
+#     --workspace-id <ID> --grafana-role ADMIN --name admin
+# Or use: aws identitystore list-users --identity-store-id d-9067c077a6
+# Then uncomment and add user_id below:
+#
+# resource "aws_grafana_role_association" "admin" {
+#   role         = "ADMIN"
+#   workspace_id = aws_grafana_workspace.dashboard.id
+#   user_ids     = ["<SSO_USER_ID>"]
+# }

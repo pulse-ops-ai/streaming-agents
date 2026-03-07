@@ -16,7 +16,7 @@ AWS_REGION: str = os.environ.get("AWS_REGION", "us-east-1")
 VOICE_MODE: str = os.environ.get("VOICE_MODE", "robot")
 
 # Voice Activity Detection (thresholds are float32 amplitude, range 0.0-1.0)
-SILENCE_THRESHOLD: float = float(os.environ.get("SILENCE_THRESHOLD", "0.015"))
+SILENCE_THRESHOLD: float = float(os.environ.get("SILENCE_THRESHOLD", "0.09"))
 SILENCE_DURATION_S: float = float(os.environ.get("SILENCE_DURATION_S", "1.5"))
 MAX_RECORD_S: float = float(os.environ.get("MAX_RECORD_S", "10"))
 MIN_RECORD_S: float = float(os.environ.get("MIN_RECORD_S", "0.5"))

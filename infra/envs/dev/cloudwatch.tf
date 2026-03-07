@@ -2,7 +2,7 @@
 # Fallback and supplement to Grafana - works immediately without ADOT setup
 
 resource "aws_cloudwatch_dashboard" "fleet_overview" {
-  dashboard_name = "streaming-agents-fleet-overview"
+  dashboard_name = "streaming-agents-fleet-overview-${var.environment}"
 
   dashboard_body = jsonencode({
     widgets = [
@@ -11,11 +11,14 @@ resource "aws_cloudwatch_dashboard" "fleet_overview" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/Lambda", "Invocations", { stat = "Sum", label = "conversation-agent" }]
+            ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.conversation_agent.function_name, { stat = "Sum", label = "conversation-agent" }],
+            ["...", aws_lambda_function.signal_agent.function_name, { stat = "Sum", label = "signal-agent" }],
+            ["...", aws_lambda_function.diagnosis_agent.function_name, { stat = "Sum", label = "diagnosis-agent" }],
+            ["...", aws_lambda_function.actions_agent.function_name, { stat = "Sum", label = "actions-agent" }]
           ]
           view    = "timeSeries"
           stacked = true
-          region  = "us-east-1"
+          region  = var.aws_region
           title   = "Lambda Invocations"
           period  = 300
           yAxis = {
@@ -34,11 +37,14 @@ resource "aws_cloudwatch_dashboard" "fleet_overview" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/Lambda", "Errors", { stat = "Sum", label = "conversation-agent", color = "#d62728" }]
+            ["AWS/Lambda", "Errors", "FunctionName", aws_lambda_function.conversation_agent.function_name, { stat = "Sum", label = "conversation-agent", color = "#d62728" }],
+            ["...", aws_lambda_function.signal_agent.function_name, { stat = "Sum", label = "signal-agent", color = "#d62728" }],
+            ["...", aws_lambda_function.diagnosis_agent.function_name, { stat = "Sum", label = "diagnosis-agent", color = "#d62728" }],
+            ["...", aws_lambda_function.actions_agent.function_name, { stat = "Sum", label = "actions-agent", color = "#d62728" }]
           ]
           view    = "timeSeries"
           stacked = true
-          region  = "us-east-1"
+          region  = var.aws_region
           title   = "Lambda Errors"
           period  = 300
           yAxis = {
@@ -57,12 +63,12 @@ resource "aws_cloudwatch_dashboard" "fleet_overview" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/Lambda", "Duration", { stat = "p50", label = "p50" }],
-            ["...", { stat = "p90", label = "p90" }],
-            ["...", { stat = "p99", label = "p99" }]
+            ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.signal_agent.function_name, { stat = "p50", label = "signal-agent p50" }],
+            ["...", { stat = "p90", label = "signal-agent p90" }],
+            ["...", { stat = "p99", label = "signal-agent p99" }]
           ]
           view   = "timeSeries"
-          region = "us-east-1"
+          region = var.aws_region
           title  = "Lambda Duration (ms)"
           period = 300
           yAxis = {
@@ -81,13 +87,13 @@ resource "aws_cloudwatch_dashboard" "fleet_overview" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", aws_dynamodb_table.asset_state.name, { stat = "Sum", label = "Asset State Read" }],
-            ["...", aws_dynamodb_table.incidents.name, { stat = "Sum", label = "Incidents Read" }],
-            [".", "ConsumedWriteCapacityUnits", ".", aws_dynamodb_table.asset_state.name, { stat = "Sum", label = "Asset State Write" }],
-            ["...", aws_dynamodb_table.incidents.name, { stat = "Sum", label = "Incidents Write" }]
+            ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", module.asset_state_table.table_name, { stat = "Sum", label = "Asset State Read" }],
+            ["...", module.incidents_table.table_name, { stat = "Sum", label = "Incidents Read" }],
+            [".", "ConsumedWriteCapacityUnits", ".", module.asset_state_table.table_name, { stat = "Sum", label = "Asset State Write" }],
+            ["...", module.incidents_table.table_name, { stat = "Sum", label = "Incidents Write" }]
           ]
           view   = "timeSeries"
-          region = "us-east-1"
+          region = var.aws_region
           title  = "DynamoDB Consumed Capacity"
           period = 300
           yAxis = {
@@ -112,7 +118,7 @@ resource "aws_cloudwatch_log_group" "conversation_agent" {
 
   tags = {
     Name        = "conversation-agent-logs"
-    Environment = "aws-sandbox"
+    Environment = var.environment
     Project     = "streaming-agents"
   }
 }
@@ -136,7 +142,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
 
   tags = {
     Name        = "lambda-errors-alarm"
-    Environment = "aws-sandbox"
+    Environment = var.environment
     Project     = "streaming-agents"
   }
 }

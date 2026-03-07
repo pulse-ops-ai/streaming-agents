@@ -707,9 +707,12 @@ resource "aws_iam_role_policy" "conversation_agent_bedrock" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = ["bedrock:InvokeModel"]
-        Resource = "*"
+        Effect = "Allow"
+        Action = ["bedrock:InvokeModel"]
+        Resource = [
+          "arn:aws:bedrock:*::foundation-model/anthropic.*",
+          "arn:aws:bedrock:*:*:inference-profile/us.anthropic.*"
+        ]
       },
       {
         Effect = "Allow"

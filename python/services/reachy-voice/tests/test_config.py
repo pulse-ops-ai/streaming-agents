@@ -25,7 +25,7 @@ def test_audio_constants():
 
 
 def test_vad_defaults():
-    assert SILENCE_THRESHOLD == 0.015
+    assert SILENCE_THRESHOLD == 0.09
     assert SILENCE_DURATION_S == 1.5
     assert MAX_RECORD_S == 10.0
     assert MIN_RECORD_S == 0.5

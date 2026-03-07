@@ -97,6 +97,9 @@ resource "aws_lexv2models_intent" "asset_status" {
   sample_utterance { utterance = "Status of {asset_id}" }
   sample_utterance { utterance = "Check on {asset_id}" }
   sample_utterance { utterance = "Is {asset_id} okay" }
+  sample_utterance { utterance = "What is the status of {asset_id}" }
+  sample_utterance { utterance = "How is {asset_id} doing" }
+  sample_utterance { utterance = "Tell me about {asset_id}" }
 
   fulfillment_code_hook {
     enabled = true
@@ -215,6 +218,11 @@ resource "aws_lexv2models_intent" "fleet_overview" {
   sample_utterance { utterance = "Show me the fleet" }
   sample_utterance { utterance = "Are there any problems" }
   sample_utterance { utterance = "What needs attention" }
+  sample_utterance { utterance = "How is the fleet doing" }
+  sample_utterance { utterance = "How is the fleet" }
+  sample_utterance { utterance = "How the fleet doing" }
+  sample_utterance { utterance = "Give me a fleet overview" }
+  sample_utterance { utterance = "Fleet overview" }
 
   fulfillment_code_hook {
     enabled = true
