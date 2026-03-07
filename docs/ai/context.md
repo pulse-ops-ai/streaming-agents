@@ -26,7 +26,7 @@ This file overrides chat history.
 
 ## Current Phase
 
-**Phase 4 – Conversation Agent**
+**Phase 5 – Demo, Article & Deployment** (active)
 
 ---
 
@@ -52,15 +52,16 @@ This file overrides chat history.
 - `@streaming-agents/core-kinesis` — KinesisProducer (batching, partial retry), KinesisConsumer, DLQPublisher
 - `@streaming-agents/lambda-base` — BaseLambdaHandler<TIn,TOut>, bootstrapLambda(), KinesisLambdaAdapter
 
-**Lambda Services (6):**
+**Lambda Services (7):**
 - `simulator-controller` — EventBridge cron → fan-out N workers per load schedule
 - `simulator-worker` — 5 deterministic scenarios (seedrandom PRNG), publishes to r17-telemetry
 - `ingestion` — Schema validation, OTel root span, metadata enrichment, fan-out to r17-ingested, DLQ routing
 - `signal-agent` — EMA baselines, z-scores, composite risk (LOCKED formula), DynamoDB state, RiskEvent emission
 - `diagnosis-agent` — Bedrock-powered root cause analysis, debounce, DiagnosisEvent emission (Phase 3)
 - `actions-agent` — Deterministic action rules, incident lifecycle, ActionEvent emission (Phase 3)
+- `conversation-agent` — Lex V2 fulfillment, Bedrock-powered responses, SSML output (Phase 4)
 
-**Infrastructure (35 Terraform resources):**
+**Infrastructure (35+ Terraform resources):**
 - 5 Kinesis streams (r17-telemetry, r17-ingested, r17-risk-events, r17-diagnosis, r17-actions)
 - 4 SQS DLQ queues
 - 2 DynamoDB tables (asset-state, incidents with GSI)
@@ -83,32 +84,38 @@ This file overrides chat history.
 
 ---
 
-## Active Phase
-
-### Phase 4 – Conversation Agent
+### Phase 4 – Conversation Agent (COMPLETE)
 **Goal:** Voice-driven AI copilot interface using Amazon Bedrock, Lex, and Polly.
 
-**Task 4.1 — Service Contract & Architecture** ✅
-- `docs/ai/services/conversation-agent.md` — Lex fulfillment contract
-- `docs/ai/architecture/lex-voice-pipeline.md` — Voice pipeline architecture
-- `docs/ai/architecture/event-schema-contract.md` — Lex payload types added
+- Lex V2 bot deployed: 5 intents (AssetStatus, FleetOverview, ExplainRisk, RecommendAction, AcknowledgeIncident)
+- conversation-agent Lambda: NestJS DI, intent router, DynamoDB adapters, Bedrock adapter (Claude Sonnet 4.6)
+- SSML response builder with speech context (severity-based emphasis, robot ID formatting)
+- All 5 intents validated end-to-end on AWS
+- Bot ID: DQCBGQZ5XT, Alias ID: AA8WY50QIT
 
-**Task 4.2 — Core Contracts & Infrastructure** 🔄 PENDING
-- Define Lex V2 Request/Response in `packages/core-contracts/src/lex.ts`
-- Add Lex bot, slot types, and fulfillment Lambda to Terraform
+---
 
-**Task 4.3 — Conversation Agent Lambda** 🔄 PENDING
-- Extends standard Lambda handler (not Kinesis)
-- DynamoDB reads for context building
-- Bedrock invocation with SSML hints
-- `apps/lambdas/conversation-agent/`
+## Active Phase
 
-**Task 4.4 — Voice Pipeline Demo** 🔄 PENDING
-- Amazon Lex text/voice interaction testing
-- Polly integration for SSML speech output
+### Phase 5 – Demo, Article & Deployment
+**Goal:** Demo video, architecture screenshots, article finalization, real hardware validation.
 
-### Phase 5 – Demo, Article, Deployment
-**Goal:** Demo video, architecture screenshots, article finalization, deploy to real AWS.
+**Task 5.1 — AWS Sandbox Deployment** ✅
+- Full stack deployed to AWS (us-east-1, account 832931621664)
+- 7 Lambdas, 5 Kinesis streams, 2 DynamoDB tables, Lex V2, Bedrock
+- CI/CD: GitHub Actions (Lambda Build → S3 SHA-keyed → Terraform Deploy)
+
+**Task 5.2 — Edge Exporter on Real Robot** 🔄 Code complete
+- `python/services/reachy-exporter/` implementation complete with 34 tests
+- Hardware deployment to RPi5 pending
+
+**Task 5.3 — Grafana Dashboard** ⬜ PENDING
+
+**Task 5.4 — Demo Video** ⬜ PENDING
+
+**Task 5.5 — Article Finalization** ⬜ PENDING
+
+**Task 5.6 — Community Engagement** ⬜ PENDING
 
 ---
 
@@ -132,12 +139,13 @@ streaming-agents/
 │       ├── ingestion/             # ✅ Kinesis trigger → validate → fan-out
 │       ├── signal-agent/          # ✅ Risk scoring → DynamoDB
 │       ├── diagnosis-agent/       # ✅ Bedrock diagnosis + MockBedrockAdapter
-│       └── actions-agent/         # ✅ Deterministic rules + incident lifecycle
+│       ├── actions-agent/         # ✅ Deterministic rules + incident lifecycle
+│       └── conversation-agent/    # ✅ Lex fulfillment + Bedrock + SSML
 ├── python/
 │   ├── packages/
-│   │   └── streaming_agents_core/ # ✅ Pydantic models
+│   │   └── streaming_agents_core/ # ✅ Pydantic models (v1 + v2)
 │   └── services/
-│       └── reachy-exporter/       # ✅ Scaffolded (runs on RPi)
+│       └── reachy-exporter/       # ✅ Complete (34 tests, hardware deploy pending)
 ├── contracts/
 │   └── kinesis/                   # ⬜ JSON Schema per event type
 ├── infra/
