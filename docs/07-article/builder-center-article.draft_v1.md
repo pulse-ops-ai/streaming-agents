@@ -74,10 +74,10 @@ The Signal Agent consumes live telemetry from the robot's edge exporter via Amaz
 
 ```
 Composite Risk =
-    0.35 × temperature_anomaly
-  + 0.25 × vibration_anomaly
-  + 0.20 × position_error_deviation
-  + 0.10 × control_loop_degradation
+    0.35 × abs(position_error_z)
+  + 0.25 × abs(accel_z)
+  + 0.15 × abs(gyro_z)
+  + 0.15 × abs(temperature_z)
   + 0.10 × threshold_breach
 ```
 
@@ -117,20 +117,20 @@ Here's where this project diverges from most demos: **the telemetry is real.**
 
 R-17 is a Reachy Mini — a wireless, Raspberry Pi-powered desktop robot with a 6-degree-of-freedom Stewart platform head, 9 servo motors, a 4-microphone array, and an onboard IMU. It runs a FastAPI daemon on port 8000 that exposes joint positions, motor states, and system health metrics via REST API and WebSocket.
 
-I built an edge exporter that runs directly on the robot's Raspberry Pi. Every two seconds, it:
+I built an edge exporter that runs directly on the robot's Raspberry Pi as a systemd service. Every two seconds, it:
 
-1. **Reads real sensor data** — board temperature from the IMU, accelerometer readings (vibration proxy), gyroscope data (rotational stability), and joint positions from all 7 head actuators
+1. **Reads real sensor data** — joint positions from all 7 head actuators, motor control states, control loop frequency, and error codes via the robot's REST API. IMU integration (accelerometer, gyroscope, board temperature) has been validated separately and is being folded into the exporter as hardware testing continues.
 2. **Computes derived signals** — position error (commanded vs. actual), acceleration magnitude, gyroscope magnitude, control loop frequency drift
-3. **Publishes to AWS** — normalized telemetry events flow through MQTT to AWS IoT Core, then into Amazon Kinesis for stream processing
+3. **Publishes to AWS** — normalized telemetry events flow into Amazon Kinesis Data Streams, where the streaming pipeline picks them up for real-time processing
 
 The signals being monitored:
 
 | Signal | Source | What It Tells Us |
 |--------|--------|-----------------|
-| Board Temperature (°C) | IMU sensor | Motor/driver thermal state |
+| Joint Position Error (°) | Commanded vs. actual position | Servo degradation — struggling to reach targets |
 | Acceleration Magnitude (m/s²) | IMU accelerometer | Vibration signature — mechanical looseness, worn joints |
 | Gyroscope Magnitude (rad/s) | IMU gyroscope | Rotational instability — unexpected movement |
-| Joint Position Error (°) | Commanded vs. actual position | Servo degradation — struggling to reach targets |
+| Board Temperature (°C) | IMU / system sensor | Motor/driver thermal state |
 | Control Loop Frequency (Hz) | Daemon statistics | System health — computational or communication stress |
 | Error Count | Daemon statistics | Cumulative hardware fault accumulation |
 
@@ -142,15 +142,14 @@ This is exactly how industrial predictive maintenance works — vibration analys
 
 | Service | Role |
 |---------|------|
-| **AWS IoT Core** | Receives MQTT telemetry from the edge exporter on the robot |
-| **Amazon Kinesis Data Streams** | Real-time ingestion pipeline for telemetry events |
-| **AWS Lambda** | Runs the Signal, Diagnosis, and Actions agents as stream processors |
-| **Amazon DynamoDB** | Stores asset state, incidents, reasoning capsules, and configuration |
-| **Amazon Bedrock** | Powers conversational explanations via the Conversation Agent |
-| **Amazon Lex** | Voice input — natural language understanding for spoken queries |
-| **Amazon Polly** | Voice output — speaks responses back to the user |
-| **Amazon API Gateway** | Exposes the copilot interface to the frontend |
-| **Amazon CloudWatch** | Monitoring and observability for the platform itself |
+| **Amazon Kinesis Data Streams** | Real-time ingestion pipeline — 5 streams carrying telemetry through the agent pipeline |
+| **AWS Lambda** | Runs all 7 services: simulator, ingestion, Signal/Diagnosis/Actions/Conversation agents |
+| **Amazon DynamoDB** | Stores asset state and incidents with GSI for active-incident lookups |
+| **Amazon Bedrock** | Powers diagnosis explanations and conversational responses (Claude Sonnet) |
+| **Amazon Lex V2** | Voice input — natural language understanding with 5 custom intents |
+| **Amazon Polly** | Voice output — neural TTS speaks responses back through the robot's speaker |
+| **Amazon Managed Grafana** | Fleet overview dashboard with CloudWatch metrics and log panels |
+| **Amazon CloudWatch** | Metrics, logs, and observability for the platform itself |
 
 Everything runs on the AWS Free Tier. The entire infrastructure is defined in Terraform and can be torn down and recreated in minutes.
 
@@ -221,7 +220,7 @@ By building the risk scoring and diagnosis logic as deterministic, explainable a
 
 ### Real hardware changes everything
 
-I could have simulated all the telemetry. It would have been faster and easier. But building the edge exporter to read real IMU data, real joint positions, and real control loop metrics from an actual robot forced me to confront the messiness of real-world data — sensor noise, timing jitter, the difference between what documentation says a robot exposes and what it actually exposes.
+I could have simulated all the telemetry. It would have been faster and easier. But building the edge exporter to read real joint positions, control loop metrics, and motor states from an actual robot forced me to confront the messiness of real-world data — sensor noise, timing jitter, the difference between what documentation says a robot exposes and what it actually exposes.
 
 That experience directly shaped the architecture. The rolling baseline approach, the z-score anomaly detection, the fallback logic when target joint positions aren't available — all of these emerged from working with real hardware, not from a whiteboard.
 
@@ -233,7 +232,7 @@ This shift — from reactive AI to proactive, streaming AI — is where I believ
 
 ### The power of the voice interface
 
-When I first built the chat interface, it worked fine. But when I added voice — when I could literally ask the robot "What's wrong with you?" and hear it explain its own health status — the experience transformed. It went from a monitoring tool to a *copilot*. That's a meaningful difference for a maintenance engineer who has their hands full and can't stare at a screen.
+When I first built the cloud conversation stack, it worked fine as a text API. But when I wired it all the way through the robot — microphone to Lex to Lambda to Bedrock to Polly and back out through the robot's speaker — the experience transformed. I could literally ask R-17 "What's wrong with you?" and hear it explain its own health status. It went from a monitoring tool to a *copilot*. That's a meaningful difference for a maintenance engineer who has their hands full and can't stare at a screen.
 
 ---
 
