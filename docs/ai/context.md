@@ -91,7 +91,7 @@ This file overrides chat history.
 - conversation-agent Lambda: NestJS DI, intent router, DynamoDB adapters, Bedrock adapter (Claude Sonnet 4.6)
 - SSML response builder with speech context (severity-based emphasis, robot ID formatting)
 - All 5 intents validated end-to-end on AWS
-- Bot ID: DQCBGQZ5XT, Alias ID: AA8WY50QIT
+- Lex V2 bot deployed via Terraform (bot ID and alias ID in Terraform outputs)
 
 ---
 
@@ -101,7 +101,7 @@ This file overrides chat history.
 **Goal:** Demo video, architecture screenshots, article finalization, real hardware validation.
 
 **Task 5.1 — AWS Sandbox Deployment** ✅
-- Full stack deployed to AWS (us-east-1, account 832931621664)
+- Full stack deployed to AWS (us-east-1)
 - 7 Lambdas, 5 Kinesis streams, 2 DynamoDB tables, Lex V2, Bedrock
 - CI/CD: GitHub Actions (Lambda Build → S3 SHA-keyed → Terraform Deploy)
 
@@ -111,12 +111,24 @@ This file overrides chat history.
 - R-17 asset state: nominal, composite_risk 0, 2000+ readings processed
 - IMU fields null (SDK not used by exporter, REST API only)
 
-**Task 5.2b — Voice Terminal on Real Robot** 🔄
-- `python/services/reachy-voice/` rewritten for Reachy Mini SDK audio (25 tests)
-- SDK WebSocket 403 blocking — daemon rejects `/ws/sdk` connections
-- Deployed to RPi5 at `~/reachy-voice/`
+**Task 5.2b — Voice Terminal on Real Robot** ✅
+- `python/services/reachy-voice/` deployed to RPi5 as Reachy Mini daemon app
+- Full voice loop working: Speech → Lex → Lambda → Bedrock → Polly TTS → Speaker
+- Polly SSML fix: replaced `<emphasis>` with `<prosody>` for neural voice compatibility
+- FleetOverview utterances expanded for better ASR recognition of "fleet"
 
-**Task 5.3 — Grafana Dashboard** ⬜ PENDING
+**Task 5.2c — CI/CD Pipeline** ✅
+- GitHub Actions: Lambda Build → S3 SHA-keyed → Terraform Deploy (workflow_run trigger)
+- OIDC bootstrap permissions fixed for Grafana + Prometheus resources
+
+**Task 5.2d — Observability Infrastructure** ✅
+- Amazon Managed Grafana workspace, Prometheus (AMP), CloudWatch deployed via Terraform
+
+**Task 5.3 — Grafana Dashboard** ✅
+- Fleet Overview dashboard: 12 CloudWatch metric panels + 2 CloudWatch Logs panels
+- Panels: Lambda Invocations/Errors/Duration, Kinesis Records/Iterator Age, DynamoDB R/W, DLQ Depth, Pipeline Stage bar gauge, Conversation Agent stats
+- Logs: Conversation Agent + Pipeline (Ingestion/Signal/Diagnosis) with Logs Insights queries
+
 
 **Task 5.4 — Demo Video** ⬜ PENDING
 

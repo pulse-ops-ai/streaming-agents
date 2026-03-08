@@ -59,3 +59,6 @@ aws/README.md
 test-full-degradation.json
 python/services/reachy-exporter/CODE_REVIEW.md
 python/services/reachy-voice/CODE_REVIEW.md
+
+# Tools — shell scripts with environment-specific config
+tools/*.sh

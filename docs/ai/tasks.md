@@ -159,7 +159,7 @@ BaseLambdaHandler and NestJS bootstrap.
 
 ## Task 4.2 – Lex Bot Configuration ✅
 **Depends on:** Task 4.1
-**Status:** Complete. Lex V2 bot deployed via Terraform with 5 intents (AssetStatus, FleetOverview, ExplainRisk, RecommendAction, AcknowledgeIncident), AssetId slot type, bot alias with Lambda fulfillment hook. Bot ID: DQCBGQZ5XT, Alias ID: AA8WY50QIT.
+**Status:** Complete. Lex V2 bot deployed via Terraform with 5 intents (AssetStatus, FleetOverview, ExplainRisk, RecommendAction, AcknowledgeIncident), AssetId slot type, bot alias with Lambda fulfillment hook. Bot ID and Alias ID available in Terraform outputs.
 
 ## Task 4.3 – Fulfillment Lambda ✅
 **Depends on:** Task 4.2
@@ -179,7 +179,7 @@ BaseLambdaHandler and NestJS bootstrap.
 
 ## Task 5.1 – AWS Sandbox Deployment ✅
 **Depends on:** Phase 4 complete
-**Status:** Complete. Full stack deployed to AWS (account 832931621664, us-east-1):
+**Status:** Complete. Full stack deployed to AWS (us-east-1):
 - 7 Lambda functions (Node.js 22, 256-512MB) deployed via CI/CD (GitHub Actions)
 - 5 Kinesis streams with ESMs, 4 SQS DLQs
 - 2 DynamoDB tables (asset-state, incidents with GSI asset_id-status-index)
@@ -206,9 +206,9 @@ Completed:
    - R-17 asset state: `risk_state: nominal`, `composite_risk: 0`, `reading_count: 2000+`
 4. ⬜ IMU data not yet available (reachy_mini SDK not imported by exporter, fields null)
 
-## Task 5.2b – Voice Terminal on Real Robot 🔄
+## Task 5.2b – Voice Terminal on Real Robot ✅
 **Depends on:** Task 5.2a
-**Status:** Audio layer rewritten for Reachy Mini SDK. SDK WebSocket connection blocked by daemon (HTTP 403). Debugging SDK<->daemon compatibility.
+**Status:** Complete. Full voice loop working on Reachy Mini hardware.
 
 Completed:
 1. ✅ `python/services/reachy-voice/` implementation (25 tests)
@@ -220,22 +220,36 @@ Completed:
    - `feedback.py` — fire-and-forget head movements via REST API
    - `loop.py` — listen→send→play cycle with press-to-talk mode
    - `main.py` — CLI with --test-mic, --test-lex, --press-to-talk
-2. ✅ Deployed to RPi5 at `~/reachy-voice/` with venv
+2. ✅ Deployed to RPi5 as Reachy Mini daemon app (`/venvs/apps_venv/`)
+3. ✅ Full voice loop validated: Speech → Lex → Lambda → Bedrock → Polly TTS → Speaker
+4. ✅ Polly SSML fix: replaced `<emphasis>` with `<prosody>` for neural voice compatibility
+5. ✅ FleetOverview utterances expanded (7 new) for better ASR recognition of "fleet"
 
-Remaining:
-3. 🔄 Fix SDK WebSocket 403 — daemon (`--wireless-version`) rejecting `/ws/sdk` connections
-4. ⬜ Validate mic recording + Lex round-trip on real hardware
-5. ⬜ Test full voice loop: speak → Lex → conversation-agent → Polly → speaker
-
-## Task 5.3 – Grafana Dashboard
+## Task 5.2c – CI/CD Pipeline ✅
 **Depends on:** Task 5.1
+**Status:** Complete. GitHub Actions CI/CD fully operational.
 
-Create Amazon Managed Grafana dashboard:
-- Fleet overview: all assets with current risk state (color-coded)
-- Asset detail: time-series of signals, z-scores, composite risk
-- Pipeline health: ingestion rate, DLQ counts, processing latency
-- Incident timeline: open/escalated/resolved incidents
-- OTel trace viewer: click any event to see full pipeline trace
+Completed:
+1. ✅ Lambda Build workflow: triggers on `apps/lambdas/**` changes, uploads 7 zips to S3 by commit SHA
+2. ✅ Terraform Deploy workflow: auto-triggers via `workflow_run` after Lambda Build
+3. ✅ OIDC bootstrap permissions fixed for Grafana + Prometheus observability resources
+4. ✅ Inline IAM policies to avoid 10-managed-policy-per-role limit
+
+## Task 5.2d – Observability Infrastructure ✅
+**Depends on:** Task 5.1
+**Status:** Complete. Amazon Managed Grafana workspace, Prometheus (AMP), CloudWatch all deployed via Terraform.
+
+## Task 5.3 – Grafana Dashboard ✅
+**Depends on:** Task 5.2d
+**Status:** Complete. Fleet Overview dashboard with 14 panels (12 metric + 2 log) deployed to AMG.
+
+Completed:
+1. ✅ CloudWatch data source configured (pre-provisioned by AMG)
+2. ✅ 12 CloudWatch metric panels: Lambda Invocations (5 functions), Lambda Errors (3), DLQ Depth (2 queues), Kinesis Incoming Records (3 streams), Kinesis Iterator Age (2 streams), Conversation Agent Duration p50/p90/p99, DynamoDB Asset State R/W, DynamoDB Incidents R/W, Diagnosis Agent Duration p50/p90/p99, Pipeline Stage Invocations (bar gauge), Conversation Agent Invocations (stat), Conversation Agent Errors (stat)
+3. ✅ 2 CloudWatch Logs panels: Conversation Agent Logs, Pipeline Logs (Ingestion + Signal + Diagnosis)
+4. ✅ Dashboard import script: `tools/import-dashboard.sh` and `tools/setup-grafana.sh`
+5. ✅ AMG CloudWatch query fix: `metricQueryType: 0` and `metricEditorMode: 0` required on all targets
+6. ✅ Dashboard imported via `tools/import-dashboard.sh`, version 6
 
 ## Task 5.4 – Demo Video
 **Depends on:** Task 5.2, Task 5.3
@@ -278,15 +292,16 @@ Post-submission (March 13–20):
 | Phase 2 – Pipeline | ✅ Complete | 105 | 4 Lambdas, 5 packages |
 | Phase 3 – AI Agents | ✅ Complete | 85 | 2 Lambdas (diagnosis, actions) |
 | Phase 4 – Voice | ✅ Complete | — | 1 Lambda (conversation-agent) + Lex V2 + Polly |
-| Phase 5 – Demo | 🔄 Active | 59 | reachy-exporter deployed, reachy-voice in progress, AWS deployed |
+| Phase 5 – Demo | 🔄 Active | 59 | AWS deployed, voice working, CI/CD complete, Grafana dashboard live |
 
 **Deadline:** March 13, 2026 (article submission)
 **Buffer:** March 20, 2026 (community voting closes)
 
 ## Known Issues / TODOs
-- **Terraform `terraform_data`**: Lex slot priorities and bot alias code hook need `terraform_data` workarounds for proper Terraform management (currently managed via AWS CLI)
+- **Lex slot recognition**: Robot IDs (R-8, R-17, R-50) need custom slot type values for better ASR
+- **Bedrock response verbosity**: Responses too long for voice — tune system prompt for brevity
 - **ExplainRisk / RecommendAction**: Return "no data" until simulator runs full pipeline and populates diagnosis/incident records
-- **Bedrock model activation**: First-time Sonnet 4.6 use required manual console activation (marketplace)
-- **Asset ID casing**: Python models updated from `r-17` → `R-17` to match TS pipeline. Verify consistency if re-seeding data.
-- **SDK WebSocket 403**: Reachy Mini daemon (`--wireless-version`) rejects SDK WebSocket connections at `/ws/sdk` with HTTP 403. Possibly single-client limit or wireless-version auth requirement. REST API (`/api/`) works fine.
-- **IMU data null**: Reachy exporter doesn't import the SDK (uses REST API only), so IMU fields are null. Could add optional SDK IMU access or parse from REST if exposed.
+- **Terraform `terraform_data`**: Lex slot priorities and bot alias code hook managed via AWS CLI (not Terraform)
+- **FallbackIntent**: Closing response configured via AWS CLI (not Terraform-managed)
+- **IMU data null**: Reachy exporter uses REST API only — IMU fields are null
+- **Grafana dashboard datasource UID**: Hardcoded in `fleet-overview.json` — would need updating if Grafana workspace is recreated
