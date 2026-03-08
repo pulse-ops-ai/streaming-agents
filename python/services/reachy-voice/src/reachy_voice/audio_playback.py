@@ -81,6 +81,7 @@ class AudioPlayer:
     # -- Robot mode --
 
     def _play_mp3_sdk(self, data: bytes) -> None:
+        logger.info("Decoding %d bytes MP3 via ffmpeg for SDK playback", len(data))
         result = subprocess.run(
             [
                 "ffmpeg",
@@ -110,6 +111,9 @@ class AudioPlayer:
             return
 
         mono = samples.reshape(-1, 1)
+        logger.info(
+            "Pushing %d samples (%.1fs) to SDK audio sink", samples.size, samples.size / SAMPLE_RATE
+        )
         self._media.push_audio_sample(mono)  # type: ignore[union-attr]
         time.sleep(len(samples) / SAMPLE_RATE)
 

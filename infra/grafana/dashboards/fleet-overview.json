@@ -1,304 +1,867 @@
 {
-  "dashboard": {
-    "title": "Fleet Overview - Streaming Agents",
-    "tags": ["streaming-agents", "fleet", "robotics"],
-    "timezone": "browser",
-    "schemaVersion": 38,
-    "version": 1,
-    "refresh": "30s",
-    "time": {
-      "from": "now-30m",
-      "to": "now"
-    },
-    "templating": {
-      "list": [
+  "title": "Fleet Overview - Streaming Agents",
+  "tags": ["streaming-agents", "fleet", "robotics"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 5,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Lambda Invocations by Function",
+      "type": "timeseries",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
         {
-          "name": "asset_id",
-          "type": "query",
-          "label": "Asset ID",
-          "datasource": "AMP",
-          "query": "label_values(streaming_agents_signal_agent_risk_score, asset_id)",
-          "multi": false,
-          "includeAll": false,
-          "refresh": 1
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": { "FunctionName": ["streaming-agents-ingestion"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Ingestion"
         },
         {
-          "name": "risk_state",
-          "type": "custom",
-          "label": "Risk State",
-          "query": "nominal,elevated,critical",
-          "multi": true,
-          "includeAll": true,
-          "current": {
-            "selected": true,
-            "text": "All",
-            "value": "$__all"
-          }
+          "refId": "B",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": { "FunctionName": ["streaming-agents-signal-agent"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Signal Agent"
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": { "FunctionName": ["streaming-agents-diagnosis-agent"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Diagnosis Agent"
+        },
+        {
+          "refId": "D",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": { "FunctionName": ["streaming-agents-actions-agent"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Actions Agent"
+        },
+        {
+          "refId": "E",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": { "FunctionName": ["streaming-agents-conversation-agent"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Conversation Agent"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 20, "stacking": { "mode": "normal" }, "lineWidth": 1 },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] } }
     },
-    "panels": [
-      {
-        "id": 1,
-        "title": "Fleet Risk Map",
-        "type": "table",
-        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
-        "targets": [
-          {
-            "datasource": "AMP",
-            "expr": "streaming_agents_signal_agent_risk_score",
-            "format": "table",
-            "instant": true
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "custom": {
-              "align": "auto",
-              "displayMode": "color-background"
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" },
-                { "value": 0.5, "color": "yellow" },
-                { "value": 0.75, "color": "red" }
-              ]
-            }
-          }
+    {
+      "id": 2,
+      "title": "Lambda Errors",
+      "type": "timeseries",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 12, "y": 0, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Errors",
+          "dimensions": { "FunctionName": ["streaming-agents-ingestion"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Ingestion"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Errors",
+          "dimensions": { "FunctionName": ["streaming-agents-signal-agent"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Signal Agent"
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Errors",
+          "dimensions": { "FunctionName": ["streaming-agents-conversation-agent"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Conversation Agent"
         }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 30,
+            "stacking": { "mode": "normal" },
+            "drawStyle": "bars",
+            "lineWidth": 0
+          },
+          "unit": "short",
+          "noValue": "0"
+        },
+        "overrides": []
       },
-      {
-        "id": 2,
-        "title": "Risk Distribution",
-        "type": "piechart",
-        "gridPos": { "x": 12, "y": 0, "w": 6, "h": 8 },
-        "targets": [
-          {
-            "datasource": "AMP",
-            "expr": "count by (risk_state) (streaming_agents_signal_agent_risk_score)"
-          }
-        ]
-      },
-      {
-        "id": 3,
-        "title": "Active Incidents",
-        "type": "stat",
-        "gridPos": { "x": 18, "y": 0, "w": 6, "h": 8 },
-        "targets": [
-          {
-            "datasource": "CloudWatch",
-            "namespace": "AWS/DynamoDB",
-            "metricName": "ItemCount",
-            "dimensions": {
-              "TableName": "streaming-agents-incidents"
-            },
-            "statistic": "Average"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "thresholds" },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" },
-                { "value": 1, "color": "yellow" },
-                { "value": 5, "color": "red" }
-              ]
-            }
-          }
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] } }
+    },
+    {
+      "id": 3,
+      "title": "DLQ Depth",
+      "type": "stat",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/SQS",
+          "metricName": "ApproximateNumberOfMessagesVisible",
+          "dimensions": { "QueueName": ["streaming-agents-r17-telemetry-dlq"] },
+          "statistic": "Maximum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Telemetry DLQ"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/SQS",
+          "metricName": "ApproximateNumberOfMessagesVisible",
+          "dimensions": { "QueueName": ["streaming-agents-r17-ingested-dlq"] },
+          "statistic": "Maximum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Ingested DLQ"
         }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "value": null, "color": "green" }, { "value": 1, "color": "red" }]
+          },
+          "unit": "short",
+          "noValue": "0"
+        },
+        "overrides": []
       },
-      {
-        "id": 4,
-        "title": "Composite Risk Over Time",
-        "type": "timeseries",
-        "gridPos": { "x": 0, "y": 8, "w": 16, "h": 8 },
-        "targets": [
-          {
-            "datasource": "AMP",
-            "expr": "streaming_agents_signal_agent_risk_score{asset_id=~\"$asset_id\"}"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "custom": {
-              "lineWidth": 2,
-              "fillOpacity": 10
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" },
-                { "value": 0.5, "color": "yellow" },
-                { "value": 0.75, "color": "red" }
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 5,
-        "title": "Z-Scores (Selected Asset)",
-        "type": "timeseries",
-        "gridPos": { "x": 16, "y": 8, "w": 8, "h": 8 },
-        "targets": [
-          {
-            "datasource": "AMP",
-            "expr": "streaming_agents_signal_agent_z_scores{asset_id=\"$asset_id\",metric=\"position_error_z\"}",
-            "legendFormat": "Position Error"
-          },
-          {
-            "datasource": "AMP",
-            "expr": "streaming_agents_signal_agent_z_scores{asset_id=\"$asset_id\",metric=\"accel_z\"}",
-            "legendFormat": "Acceleration"
-          },
-          {
-            "datasource": "AMP",
-            "expr": "streaming_agents_signal_agent_z_scores{asset_id=\"$asset_id\",metric=\"gyro_z\"}",
-            "legendFormat": "Gyroscope"
-          },
-          {
-            "datasource": "AMP",
-            "expr": "streaming_agents_signal_agent_z_scores{asset_id=\"$asset_id\",metric=\"temperature_z\"}",
-            "legendFormat": "Temperature"
-          }
-        ]
-      },
-      {
-        "id": 6,
-        "title": "Events Per Stage",
-        "type": "bargauge",
-        "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
-        "targets": [
-          {
-            "datasource": "CloudWatch",
-            "namespace": "AWS/Lambda",
-            "metricName": "Invocations",
-            "dimensions": {
-              "FunctionName": "streaming-agents-conversation-agent"
-            },
-            "statistic": "Sum"
-          }
-        ],
-        "options": {
-          "orientation": "horizontal",
-          "displayMode": "gradient"
-        }
-      },
-      {
-        "id": 7,
-        "title": "Processing Latency (p50/p95/p99)",
-        "type": "timeseries",
-        "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
-        "targets": [
-          {
-            "datasource": "CloudWatch",
-            "namespace": "AWS/Lambda",
-            "metricName": "Duration",
-            "dimensions": {
-              "FunctionName": "streaming-agents-conversation-agent"
-            },
-            "statistic": "p50",
-            "alias": "p50"
-          },
-          {
-            "datasource": "CloudWatch",
-            "namespace": "AWS/Lambda",
-            "metricName": "Duration",
-            "dimensions": {
-              "FunctionName": "streaming-agents-conversation-agent"
-            },
-            "statistic": "p95",
-            "alias": "p95"
-          },
-          {
-            "datasource": "CloudWatch",
-            "namespace": "AWS/Lambda",
-            "metricName": "Duration",
-            "dimensions": {
-              "FunctionName": "streaming-agents-conversation-agent"
-            },
-            "statistic": "p99",
-            "alias": "p99"
-          }
-        ]
-      },
-      {
-        "id": 8,
-        "title": "Lambda Errors",
-        "type": "bargauge",
-        "gridPos": { "x": 0, "y": 24, "w": 8, "h": 6 },
-        "targets": [
-          {
-            "datasource": "CloudWatch",
-            "namespace": "AWS/Lambda",
-            "metricName": "Errors",
-            "dimensions": {
-              "FunctionName": "streaming-agents-conversation-agent"
-            },
-            "statistic": "Sum"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "palette-classic" },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [{ "value": 0, "color": "green" }, { "value": 1, "color": "red" }]
-            }
-          }
-        }
-      },
-      {
-        "id": 9,
-        "title": "DynamoDB Read/Write Capacity",
-        "type": "timeseries",
-        "gridPos": { "x": 8, "y": 24, "w": 16, "h": 6 },
-        "targets": [
-          {
-            "datasource": "CloudWatch",
-            "namespace": "AWS/DynamoDB",
-            "metricName": "ConsumedReadCapacityUnits",
-            "dimensions": {
-              "TableName": "streaming-agents-asset-state"
-            },
-            "statistic": "Sum",
-            "alias": "Asset State Read"
-          },
-          {
-            "datasource": "CloudWatch",
-            "namespace": "AWS/DynamoDB",
-            "metricName": "ConsumedWriteCapacityUnits",
-            "dimensions": {
-              "TableName": "streaming-agents-asset-state"
-            },
-            "statistic": "Sum",
-            "alias": "Asset State Write"
-          },
-          {
-            "datasource": "CloudWatch",
-            "namespace": "AWS/DynamoDB",
-            "metricName": "ConsumedReadCapacityUnits",
-            "dimensions": {
-              "TableName": "streaming-agents-incidents"
-            },
-            "statistic": "Sum",
-            "alias": "Incidents Read"
-          },
-          {
-            "datasource": "CloudWatch",
-            "metricName": "ConsumedWriteCapacityUnits",
-            "dimensions": {
-              "TableName": "streaming-agents-incidents"
-            },
-            "statistic": "Sum",
-            "alias": "Incidents Write"
-          }
-        ]
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
       }
-    ]
-  },
-  "overwrite": true
+    },
+    {
+      "id": 4,
+      "title": "Kinesis Incoming Records",
+      "type": "timeseries",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 0, "y": 8, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Kinesis",
+          "metricName": "IncomingRecords",
+          "dimensions": { "StreamName": ["streaming-agents-r17-telemetry"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Telemetry"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Kinesis",
+          "metricName": "IncomingRecords",
+          "dimensions": { "StreamName": ["streaming-agents-r17-ingested"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Ingested"
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Kinesis",
+          "metricName": "IncomingRecords",
+          "dimensions": { "StreamName": ["streaming-agents-r17-risk-events"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Risk Events"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 10, "lineWidth": 2 },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] } }
+    },
+    {
+      "id": 5,
+      "title": "Kinesis Iterator Age",
+      "type": "timeseries",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 8, "y": 8, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Kinesis",
+          "metricName": "GetRecords.IteratorAgeMilliseconds",
+          "dimensions": { "StreamName": ["streaming-agents-r17-telemetry"] },
+          "statistic": "Maximum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Telemetry"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Kinesis",
+          "metricName": "GetRecords.IteratorAgeMilliseconds",
+          "dimensions": { "StreamName": ["streaming-agents-r17-ingested"] },
+          "statistic": "Maximum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Ingested"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 5, "lineWidth": 2, "thresholdsStyle": { "mode": "line" } },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "value": null, "color": "green" }, { "value": 60000, "color": "red" }]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 6,
+      "title": "Conversation Agent Duration p50 / p90 / p99",
+      "type": "timeseries",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 16, "y": 8, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Duration",
+          "dimensions": { "FunctionName": ["streaming-agents-conversation-agent"] },
+          "statistic": "p50",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "p50"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Duration",
+          "dimensions": { "FunctionName": ["streaming-agents-conversation-agent"] },
+          "statistic": "p90",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "p90"
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Duration",
+          "dimensions": { "FunctionName": ["streaming-agents-conversation-agent"] },
+          "statistic": "p99",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 5, "lineWidth": 2 },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 7,
+      "title": "DynamoDB - Asset State Table",
+      "type": "timeseries",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/DynamoDB",
+          "metricName": "ConsumedReadCapacityUnits",
+          "dimensions": { "TableName": ["streaming-agents-asset-state"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Read Capacity"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/DynamoDB",
+          "metricName": "ConsumedWriteCapacityUnits",
+          "dimensions": { "TableName": ["streaming-agents-asset-state"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Write Capacity"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 15, "lineWidth": 2 },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 8,
+      "title": "DynamoDB - Incidents Table",
+      "type": "timeseries",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/DynamoDB",
+          "metricName": "ConsumedReadCapacityUnits",
+          "dimensions": { "TableName": ["streaming-agents-incidents"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Read Capacity"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/DynamoDB",
+          "metricName": "ConsumedWriteCapacityUnits",
+          "dimensions": { "TableName": ["streaming-agents-incidents"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Write Capacity"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 15, "lineWidth": 2 },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 9,
+      "title": "Diagnosis Agent Duration p50 / p90 / p99",
+      "type": "timeseries",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 0, "y": 24, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Duration",
+          "dimensions": { "FunctionName": ["streaming-agents-diagnosis-agent"] },
+          "statistic": "p50",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "p50"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Duration",
+          "dimensions": { "FunctionName": ["streaming-agents-diagnosis-agent"] },
+          "statistic": "p90",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "p90"
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Duration",
+          "dimensions": { "FunctionName": ["streaming-agents-diagnosis-agent"] },
+          "statistic": "p99",
+          "period": "300",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 5, "lineWidth": 2 },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 10,
+      "title": "Pipeline Stage Invocations",
+      "type": "bargauge",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 8, "y": 24, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": { "FunctionName": ["streaming-agents-ingestion"] },
+          "statistic": "Sum",
+          "period": "3600",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Ingestion"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": { "FunctionName": ["streaming-agents-signal-agent"] },
+          "statistic": "Sum",
+          "period": "3600",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Signal Agent"
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": { "FunctionName": ["streaming-agents-diagnosis-agent"] },
+          "statistic": "Sum",
+          "period": "3600",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Diagnosis Agent"
+        },
+        {
+          "refId": "D",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": { "FunctionName": ["streaming-agents-actions-agent"] },
+          "statistic": "Sum",
+          "period": "3600",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true,
+          "label": "Actions Agent"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "reduceOptions": { "calcs": ["sum"] }
+      }
+    },
+    {
+      "id": 11,
+      "title": "Conversation Agent Invocations",
+      "type": "stat",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 16, "y": 24, "w": 4, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": { "FunctionName": ["streaming-agents-conversation-agent"] },
+          "statistic": "Sum",
+          "period": "3600",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "value": null, "color": "blue" }, { "value": 10, "color": "green" }]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["sum"] }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Conversation Agent Errors",
+      "type": "stat",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 20, "y": 24, "w": 4, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "AWS/Lambda",
+          "metricName": "Errors",
+          "dimensions": { "FunctionName": ["streaming-agents-conversation-agent"] },
+          "statistic": "Sum",
+          "period": "3600",
+          "region": "us-east-1",
+          "id": "",
+          "expression": "",
+          "matchExact": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "value": null, "color": "green" }, { "value": 1, "color": "red" }]
+          },
+          "unit": "short",
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["sum"] }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Logs",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 32, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "id": 14,
+      "title": "Conversation Agent Logs",
+      "type": "logs",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 0, "y": 33, "w": 24, "h": 10 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Logs",
+          "logGroups": [
+            {
+              "arn": "arn:aws:logs:us-east-1:832931621664:log-group:/aws/lambda/streaming-agents-conversation-agent",
+              "name": "/aws/lambda/streaming-agents-conversation-agent",
+              "accountId": "832931621664"
+            }
+          ],
+          "expression": "fields @timestamp, @message, @logStream\n| filter @message not like /^(START|END|REPORT) /\n| sort @timestamp desc\n| limit 100",
+          "region": "us-east-1",
+          "id": ""
+        }
+      ],
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      }
+    },
+    {
+      "id": 15,
+      "title": "Pipeline Logs (Ingestion + Signal + Diagnosis)",
+      "type": "logs",
+      "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+      "gridPos": { "x": 0, "y": 43, "w": 24, "h": 10 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "cloudwatch", "uid": "bffc1fj56p534d" },
+          "queryMode": "Logs",
+          "logGroups": [
+            {
+              "arn": "arn:aws:logs:us-east-1:832931621664:log-group:/aws/lambda/streaming-agents-ingestion",
+              "name": "/aws/lambda/streaming-agents-ingestion",
+              "accountId": "832931621664"
+            },
+            {
+              "arn": "arn:aws:logs:us-east-1:832931621664:log-group:/aws/lambda/streaming-agents-signal-agent",
+              "name": "/aws/lambda/streaming-agents-signal-agent",
+              "accountId": "832931621664"
+            },
+            {
+              "arn": "arn:aws:logs:us-east-1:832931621664:log-group:/aws/lambda/streaming-agents-diagnosis-agent",
+              "name": "/aws/lambda/streaming-agents-diagnosis-agent",
+              "accountId": "832931621664"
+            }
+          ],
+          "expression": "fields @timestamp, @message, @logStream\n| filter @message not like /^(START|END|REPORT) /\n| sort @timestamp desc\n| limit 100",
+          "region": "us-east-1",
+          "id": ""
+        }
+      ],
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      }
+    }
+  ]
 }
