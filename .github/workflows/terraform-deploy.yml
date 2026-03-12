@@ -1,0 +1,315 @@
+name: Terraform Deploy
+
+on:
+  # Auto-trigger after Lambda Build completes on main
+  workflow_run:
+    workflows: ["Lambda Build"]
+    types: [completed]
+    branches: [main]
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'infra/**'
+      - '.github/workflows/terraform-deploy.yml'
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      terraform_action:
+        description: 'Terraform action'
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+        default: plan
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  AWS_REGION: us-east-1
+  TERRAFORM_VERSION: 1.9.0
+
+jobs:
+  # ── Job 1: Validate Terraform Configuration ────────────────────
+  validate:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        working-directory: infra
+
+      - name: Terraform Init (dev)
+        run: terraform init -backend=false
+        working-directory: infra/envs/dev
+
+      - name: Terraform Validate (dev)
+        run: terraform validate
+        working-directory: infra/envs/dev
+
+  # ── Job 2: Plan Terraform Changes ──────────────────────────────
+  plan:
+    name: Plan (${{ matrix.environment }})
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: validate
+
+    strategy:
+      matrix:
+        environment: [dev]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Resolve secret name
+        id: role
+        run: echo "name=AWS_ROLE_$(echo '${{ matrix.environment }}' | tr '[:lower:]' '[:upper:]')" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets[steps.role.outputs.name] }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infra/envs/${{ matrix.environment }}
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -no-color -out=tfplan
+          terraform show -no-color tfplan > plan.txt
+        working-directory: infra/envs/${{ matrix.environment }}
+        continue-on-error: true
+
+      - name: Post Plan Comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: ${{ steps.plan.outputs.stdout }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('infra/envs/${{ matrix.environment }}/plan.txt', 'utf8');
+            const output = `#### Terraform Plan: \`${{ matrix.environment }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`terraform
+            ${plan}
+            \`\`\`
+
+            </details>
+
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+  # ── Job 3: Deploy to Dev (Auto after Lambda Build) ─────────────
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev' && github.event.inputs.terraform_action == 'apply')
+    environment: dev
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Resolve commit SHA
+        id: sha
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download Lambda artifacts from S3
+        run: |
+          BUCKET_NAME="streaming-agents-lambda-artifacts"
+          COMMIT_SHA="${{ steps.sha.outputs.sha }}"
+
+          mkdir -p lambda-artifacts
+
+          aws s3 sync \
+            "s3://${BUCKET_NAME}/${COMMIT_SHA}/" \
+            lambda-artifacts/ \
+            --exclude "*" --include "*.zip"
+
+          echo "Downloaded Lambda artifacts:"
+          ls -lh lambda-artifacts/
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infra/envs/dev
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: infra/envs/dev
+        env:
+          TF_VAR_lambda_artifacts_path: ../../../lambda-artifacts
+
+      - name: Tag Deployment
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** dev" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ steps.sha.outputs.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Actor:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time:** $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+
+  # ── Job 4: Deploy to Staging (Manual) ──────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging' && github.event.inputs.terraform_action == 'apply'
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_STAGING }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Download Lambda artifacts from S3
+        run: |
+          BUCKET_NAME="streaming-agents-lambda-artifacts"
+          COMMIT_SHA="${{ github.sha }}"
+
+          mkdir -p lambda-artifacts
+
+          aws s3 sync \
+            "s3://${BUCKET_NAME}/${COMMIT_SHA}/" \
+            lambda-artifacts/ \
+            --exclude "*" --include "*.zip"
+
+          echo "Downloaded Lambda artifacts:"
+          ls -lh lambda-artifacts/
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infra/envs/staging
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: infra/envs/staging
+        env:
+          TF_VAR_lambda_artifacts_path: ../../../lambda-artifacts
+
+      - name: Tag Deployment
+        run: |
+          echo "Deployed to staging at $(date)"
+          echo "Commit: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"
+
+  # ── Job 5: Deploy to Prod (Manual with Approval) ───────────────
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod' && github.event.inputs.terraform_action == 'apply'
+    environment: prod
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Download Lambda artifacts from S3
+        run: |
+          BUCKET_NAME="streaming-agents-lambda-artifacts"
+          COMMIT_SHA="${{ github.sha }}"
+
+          mkdir -p lambda-artifacts
+
+          aws s3 sync \
+            "s3://${BUCKET_NAME}/${COMMIT_SHA}/" \
+            lambda-artifacts/ \
+            --exclude "*" --include "*.zip"
+
+          echo "Downloaded Lambda artifacts:"
+          ls -lh lambda-artifacts/
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infra/envs/prod
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: infra/envs/prod
+        env:
+          TF_VAR_lambda_artifacts_path: ../../../lambda-artifacts
+
+      - name: Tag Deployment
+        run: |
+          echo "Deployed to production at $(date)"
+          echo "Commit: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"

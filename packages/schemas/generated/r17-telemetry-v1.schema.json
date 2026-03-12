@@ -1,0 +1,70 @@
+{
+  "$ref": "#/definitions/r17-telemetry-v1",
+  "definitions": {
+    "r17-telemetry-v1": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "r17.telemetry.v1"
+        },
+        "event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asset_id": {
+          "type": "string",
+          "const": "r-17"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["simulator", "reachy-daemon", "reachy-sdk", "replay"]
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sampling_hz": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "joint_3_torque_nm": {
+          "type": "number"
+        },
+        "joint_3_temperature_c": {
+          "type": "number"
+        },
+        "motor_current_amp": {
+          "type": "number"
+        },
+        "joint_position_error_deg": {
+          "type": "number",
+          "minimum": 0
+        },
+        "error_code": {
+          "type": ["string", "null"],
+          "default": null
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "asset_id",
+        "timestamp",
+        "source",
+        "sequence",
+        "sampling_hz",
+        "joint_3_torque_nm",
+        "joint_3_temperature_c",
+        "motor_current_amp",
+        "joint_position_error_deg"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

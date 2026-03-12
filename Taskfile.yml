@@ -1,0 +1,89 @@
+version: "3"
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  install:
+    desc: Install all dependencies
+    cmds:
+      - pnpm install
+
+  dev:
+    desc: Start local development
+    cmds:
+      - pnpm run dev
+
+  build:
+    desc: Build all packages and services
+    cmds:
+      - pnpm run build
+
+  test:
+    desc: Run all tests
+    cmds:
+      - pnpm run test
+
+  lint:
+    desc: Lint everything
+    cmds:
+      - pnpm run lint
+
+  infra:up:
+    desc: Spin up LocalStack infrastructure
+    cmds:
+      - docker compose up -d
+      - sleep 5
+      - cmd: tflocal init
+        dir: infra/envs/localstack
+      - cmd: tflocal apply -auto-approve
+        dir: infra/envs/localstack
+
+  infra:down:
+    desc: Tear down LocalStack infrastructure
+    cmds:
+      - cmd: tflocal destroy -auto-approve
+        dir: infra/envs/localstack
+        ignore_error: true
+      - docker compose down -v
+
+  seed:
+    desc: Seed local data
+    cmds:
+      - bash scripts/seed/seed.sh
+
+  teardown:
+    desc: Full teardown of local environment
+    cmds:
+      - bash scripts/teardown/teardown.sh
+
+  deploy:voice:
+    desc: Deploy reachy-voice to Pi and install into apps_venv
+    cmds:
+      - ssh pollen@reachy-mini.local 'rm -rf ~/reachy-voice && mkdir -p ~/reachy-voice/src'
+      - scp -r python/services/reachy-voice/src/reachy_voice pollen@reachy-mini.local:~/reachy-voice/src/
+      - scp python/services/reachy-voice/pyproject.toml pollen@reachy-mini.local:~/reachy-voice/
+      - ssh pollen@reachy-mini.local '/venvs/apps_venv/bin/pip install ~/reachy-voice/'
+
+  deploy:voice:update:
+    desc: Redeploy reachy-voice code (skip dependency resolution)
+    cmds:
+      - ssh pollen@reachy-mini.local 'rm -rf ~/reachy-voice && mkdir -p ~/reachy-voice/src'
+      - scp -r python/services/reachy-voice/src/reachy_voice pollen@reachy-mini.local:~/reachy-voice/src/
+      - scp python/services/reachy-voice/pyproject.toml pollen@reachy-mini.local:~/reachy-voice/
+      - ssh pollen@reachy-mini.local '/venvs/apps_venv/bin/pip install --force-reinstall --no-deps ~/reachy-voice/'
+
+  deploy:exporter:
+    desc: Deploy reachy-exporter to Pi
+    cmds:
+      - ssh pollen@reachy-mini.local 'rm -rf ~/streaming-agents/src/reachy_exporter'
+      - scp -r python/services/reachy-exporter/src/reachy_exporter pollen@reachy-mini.local:~/streaming-agents/src/
+      - ssh pollen@reachy-mini.local 'sudo systemctl restart reachy-exporter'
+
+  deploy:pi:
+    desc: Deploy both services to Pi
+    cmds:
+      - task: deploy:exporter
+      - task: deploy:voice

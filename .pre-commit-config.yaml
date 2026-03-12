@@ -1,0 +1,68 @@
+# See docs/05-dev/precommit.md for setup instructions.
+# Install hooks:  pre-commit install
+# Run all hooks:  pre-commit run --all-files
+
+default_language_version:
+  python: python3
+
+fail_fast: false
+
+repos:
+  # ── basic hygiene ─────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+
+  # ── secrets scanning (baseline-based) ─────────────────
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+        exclude: |
+          (?x)(
+            ^pnpm-lock\.yaml$|
+            ^package-lock\.json$|
+            ^yarn\.lock$|
+            ^python/uv\.lock$|
+            ^.*\.min\.js$|
+            ^.*\.map$
+          )
+
+  # ── gitleaks (fast, catches more patterns) ────────────
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  # ── JS/TS formatting + linting via Biome ──────────────
+  - repo: local
+    hooks:
+      - id: biome-check
+        name: biome check (staged)
+        entry: pnpm -w biome check --write
+        language: system
+        pass_filenames: true
+        types_or: [javascript, jsx, ts, tsx, json]
+
+  # ── Python lint/format via Ruff (uv inside /python) ───
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check (python)
+        entry: bash -lc 'cd python && uv run ruff check .'
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: ruff-format
+        name: ruff format (python)
+        entry: bash -lc 'cd python && uv run ruff format .'
+        language: system
+        pass_filenames: false
+        types: [python]

@@ -1,0 +1,67 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.lock.hcl
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+.nyc_output/
+htmlcov/
+
+# LocalStack
+.localstack/
+volume/
+docker/localstack/*
+!docker/localstack/.gitkeep
+awscliv2.zip
+THIRD_PARTY_LICENSES
+aws/install
+aws/README.md
+test-full-degradation.json
+python/services/reachy-exporter/CODE_REVIEW.md
+python/services/reachy-voice/CODE_REVIEW.md
+
+# Tools — shell scripts with environment-specific config
+tools/*.sh
+docs/07-article/img/old/**
+docs/07-article/builder-center-article.draft_v1.md
+docs/07-article/builder-center-article.draft_v2.md

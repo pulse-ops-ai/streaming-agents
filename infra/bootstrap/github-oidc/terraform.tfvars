@@ -1,0 +1,7 @@
+aws_account_id         = "000000000000"
+aws_region             = "us-east-1"
+aws_profile            = "streaming-agents-sandbox-kong"
+github_org             = "pulse-ops-ai"
+github_repo            = "streaming-agents"
+terraform_state_bucket = "streaming-agents-tfstate"
+terraform_lock_table   = "streaming-agents-tfstate-locks"

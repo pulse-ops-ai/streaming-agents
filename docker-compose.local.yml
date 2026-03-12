@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  dashboard-api:
+    build:
+      context: .
+      dockerfile: apps/api/dashboard-api/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DYNAMODB_HISTORY_TABLE=${DYNAMODB_HISTORY_TABLE:-streaming-agents-asset-history}
+      - DYNAMODB_ASSET_STATE_TABLE=${DYNAMODB_ASSET_STATE_TABLE:-streaming-agents-asset-state}
+      - DYNAMODB_INCIDENTS_TABLE=${DYNAMODB_INCIDENTS_TABLE:-streaming-agents-incidents}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - NODE_ENV=${NODE_ENV:-production}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    networks:
+      - pulse-dashboard-network
+    restart: unless-stopped
+
+  web-dashboard:
+    build:
+      context: .
+      dockerfile: web/dashboard/Dockerfile
+    ports:
+      - "8080:80"
+    networks:
+      - pulse-dashboard-network
+    depends_on:
+      - dashboard-api
+    restart: unless-stopped
+
+networks:
+  pulse-dashboard-network:
+    driver: bridge

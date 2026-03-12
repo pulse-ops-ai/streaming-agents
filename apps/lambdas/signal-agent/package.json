@@ -1,0 +1,32 @@
+{
+  "name": "@streaming-agents/signal-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Signal Agent Lambda — rolling baselines, z-scores, composite risk scoring",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.700.0",
+    "@aws-sdk/client-kinesis": "^3.700.0",
+    "@aws-sdk/lib-dynamodb": "^3.700.0",
+    "@nestjs/common": "^10.4.0",
+    "@nestjs/core": "^10.4.0",
+    "@streaming-agents/core-contracts": "workspace:*",
+    "@streaming-agents/core-kinesis": "workspace:*",
+    "@streaming-agents/core-telemetry": "workspace:*",
+    "@streaming-agents/lambda-base": "workspace:*",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@streaming-agents/schemas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Canonical telemetry and risk-update event schemas for Streaming Agents",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "generate:jsonschema": "tsx scripts/generate-jsonschema.ts"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "zod-to-json-schema": "^3.24.0"
+  }
+}

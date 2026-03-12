@@ -1,0 +1,21 @@
+{
+  "messageVersion": "1.0",
+  "invocationSource": "FulfillmentCodeHook",
+  "sessionState": {
+    "intent": {
+      "name": "FleetOverview",
+      "slots": {},
+      "state": "InProgress"
+    },
+    "sessionAttributes": {}
+  },
+  "bot": {
+    "id": "test-bot",
+    "name": "streaming-agents-copilot",
+    "aliasId": "TSTALIASID",
+    "aliasName": "TestBotAlias",
+    "localeId": "en_US",
+    "version": "DRAFT"
+  },
+  "inputTranscript": "Show me the fleet status"
+}

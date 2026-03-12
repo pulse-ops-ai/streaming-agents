@@ -1,0 +1,104 @@
+{
+  "$ref": "#/definitions/r17-risk-update-v1",
+  "definitions": {
+    "r17-risk-update-v1": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "r17.risk_update.v1"
+        },
+        "event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asset_id": {
+          "type": "string",
+          "const": "r-17"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "telemetry_event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "window_s": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "risk_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "risk_state": {
+          "type": "string",
+          "enum": ["nominal", "elevated", "critical"]
+        },
+        "anomaly_z": {
+          "type": "object",
+          "properties": {
+            "joint_3_torque_nm": {
+              "type": "number"
+            },
+            "joint_3_temperature_c": {
+              "type": "number"
+            },
+            "motor_current_amp": {
+              "type": "number"
+            },
+            "joint_position_error_deg": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "joint_3_torque_nm",
+            "joint_3_temperature_c",
+            "motor_current_amp",
+            "joint_position_error_deg"
+          ],
+          "additionalProperties": false
+        },
+        "weights": {
+          "type": "object",
+          "properties": {
+            "torque": {
+              "type": "number",
+              "const": 0.4
+            },
+            "temperature": {
+              "type": "number",
+              "const": 0.3
+            },
+            "position_error": {
+              "type": "number",
+              "const": 0.2
+            },
+            "threshold_breach": {
+              "type": "number",
+              "const": 0.1
+            }
+          },
+          "required": ["torque", "temperature", "position_error", "threshold_breach"],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "asset_id",
+        "timestamp",
+        "telemetry_event_id",
+        "window_s",
+        "risk_score",
+        "risk_state",
+        "anomaly_z",
+        "weights"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
